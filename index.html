@@ -1,0 +1,2121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>The Sim2Real Gap</title>
+<link rel="canonical" href="https://zerotimedrift.github.io/sim2real-gap/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='6' width='12' height='20' rx='2' fill='%232a78d6'/%3E%3Crect x='17' y='6' width='12' height='20' rx='2' fill='%23eb6834'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#eef0ef">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Sim2Real Gap">
+<meta property="og:title" content="The Sim2Real Gap">
+<meta property="og:description" content="An interactive field guide to the sim-to-real gap in robotics: where simulators fall short, why small gaps become big failures, and what makes deployment repeatable.">
+<meta property="og:url" content="https://zerotimedrift.github.io/sim2real-gap/">
+<meta property="og:image" content="https://zerotimedrift.github.io/sim2real-gap/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Sim2Real Gap: a simulated robot pick that succeeds 60 of 60 times beside the same pick on site, where the attempts spread out and some miss or slip.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Sim2Real Gap">
+<meta name="twitter:description" content="An interactive field guide to the sim-to-real gap in robotics: where simulators fall short, why small gaps become big failures, and what makes deployment repeatable.">
+<meta name="twitter:image" content="https://zerotimedrift.github.io/sim2real-gap/og.png">
+<meta name="description" content="An interactive field guide to the sim-to-real gap in robotics: where simulators fall short, why small gaps become big failures, and what makes deployment repeatable.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Big+Shoulders+Stencil+Display:wght@800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  /* Layout: a field report. A ~660px reading column with margin notes in the right gutter on wide screens; figures span the full 1120px page; a section rail appears at left on very wide screens. Blue always means the simulator, orange always means the real site. */
+  --paper:#eef0ef;
+  --surface:#f8f9f8;
+  --well:#e3e8e8;
+  --ink:#15191c;
+  --ink-2:#475056;
+  --muted:#5f696f;
+  --rule:#d3d9da;
+  --rule-strong:#b3bcbf;
+  --sim:#2a78d6;
+  --real:#eb6834;
+  --sim-wash:rgba(42,120,214,.11);
+  --real-wash:rgba(235,104,52,.14);
+  --good:#0ca30c;--good-ink:#006300;--good-wash:rgba(12,163,12,.12);
+  --warn:#fab219;--warn-ink:#7a5000;--warn-wash:rgba(250,178,25,.2);
+  --bad:#d03b3b;--bad-ink:#b02a2a;--bad-wash:rgba(208,59,59,.12);
+  --heat:#c42b2b;
+  --focus:#2a78d6;
+  --shadow:rgba(21,25,28,.16);
+  --font-display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",sans-serif;
+  --font-stencil:"Big Shoulders Stencil Display","Big Shoulders Display","Arial Narrow",sans-serif;
+  --font-body:"IBM Plex Sans","Helvetica Neue",Arial,system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0d1012;--surface:#14181b;--well:#1d2327;--ink:#e8ecec;--ink-2:#aeb7bb;--muted:#848d92;--rule:#263035;--rule-strong:#3a464c;
+  --sim:#3987e5;--real:#d95926;--sim-wash:rgba(57,135,229,.17);--real-wash:rgba(217,89,38,.2);
+  --good-ink:#3cc23c;--good-wash:rgba(12,163,12,.2);--warn-ink:#fab219;--warn-wash:rgba(250,178,25,.16);--bad-ink:#f07a7a;--bad-wash:rgba(208,59,59,.22);
+  --heat:#ff5a4f;--focus:#3987e5;--shadow:rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0d1012;--surface:#14181b;--well:#1d2327;--ink:#e8ecec;--ink-2:#aeb7bb;--muted:#848d92;--rule:#263035;--rule-strong:#3a464c;
+  --sim:#3987e5;--real:#d95926;--sim-wash:rgba(57,135,229,.17);--real-wash:rgba(217,89,38,.2);
+  --good-ink:#3cc23c;--good-wash:rgba(12,163,12,.2);--warn-ink:#fab219;--warn-wash:rgba(250,178,25,.16);--bad-ink:#f07a7a;--bad-wash:rgba(208,59,59,.22);
+  --heat:#ff5a4f;--focus:#3987e5;--shadow:rgba(0,0,0,.5);color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.6;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration-color:var(--rule-strong);text-underline-offset:3px;text-decoration-thickness:1px}
+a:hover{text-decoration-color:currentColor}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+p{margin:0 0 1em}
+strong,b{font-weight:600}
+sub{font-size:.72em}
+.page{max-width:1120px;margin:0 auto;padding-block:36px 120px}
+
+/* hero */
+.hero{display:grid;gap:22px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+.wordmark{font-family:var(--font-stencil);font-weight:800;font-size:clamp(56px,12.4vw,150px);line-height:.84;text-transform:uppercase;letter-spacing:.01em;margin:0;text-wrap:balance}
+.wordmark .w-sim{color:var(--sim)}
+.wordmark .w-real{color:var(--real)}
+.wordmark .w-two{color:var(--muted)}
+.lede{font-size:clamp(19px,2.1vw,22px);line-height:1.5;color:var(--ink-2);max-width:40em;margin:0}
+.key{display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--font-mono);font-size:12px;color:var(--ink-2);margin:0}
+.key span{display:inline-flex;align-items:center;gap:8px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.sw-sim{background:var(--sim)}
+.sw-real{background:var(--real)}
+
+/* figures */
+.fig{margin:28px 0;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:18px clamp(14px,2.4vw,24px);display:grid;gap:16px;min-width:0}
+.fig-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.fig-no{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fig-title{font-weight:600;font-size:18px;line-height:1.3;margin:0;flex:1 1 260px}
+.fig-actions{display:flex;flex-wrap:wrap;gap:8px}
+.fig figcaption{font-size:14.5px;line-height:1.55;color:var(--ink-2);margin:0;max-width:80ch}
+.fig figcaption p{margin:0 0 .5em}
+.model-note{font-family:var(--font-mono);font-size:12px;line-height:1.5;color:var(--muted);margin:0}
+.sub-h{font-size:13px;font-weight:600;margin:0;color:var(--ink)}
+
+/* controls */
+.btn{font:500 13px/1 var(--font-mono);color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:5px;padding:9px 12px;cursor:pointer}
+.btn:hover{background:var(--well)}
+.btn:active{transform:translateY(1px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:500 13px/1.25 var(--font-body);color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:5px;padding:7px 11px;cursor:pointer;text-align:left;display:grid;gap:1px}
+.seg button:hover{background:var(--well)}
+.seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.seg .seg-sub{font:400 11px/1.2 var(--font-mono);opacity:.75}
+.ctrl{display:grid;grid-template-columns:minmax(0,8.6em) minmax(0,1fr) 5.4em;align-items:center;gap:10px;font-size:14px;color:var(--ink-2)}
+.ctrl output{font-family:var(--font-mono);font-size:13px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--ink);margin:0;min-width:0;height:22px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2);cursor:pointer}
+.check input{accent-color:var(--ink);width:16px;height:16px;margin:0}
+select{font:500 13px var(--font-body);color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:5px;padding:6px 8px}
+input[type=number]{font:500 15px var(--font-mono);color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:5px;padding:5px 8px;width:6.2em}
+
+/* tiles */
+.tiles{display:flex;flex-wrap:wrap;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.tile{background:var(--surface);padding:10px 12px;display:grid;gap:3px;align-content:start;flex:1 1 128px;min-width:0}
+.tile .l{font-size:12.5px;line-height:1.3;color:var(--ink-2);display:flex;align-items:center;gap:7px}
+.tile .v{font-size:27px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
+.tile .s{font-family:var(--font-mono);font-size:11px;line-height:1.35;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:7px;font:500 11px/1 var(--font-mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;border-radius:3px;color:var(--ink)}
+.tag::before{content:"";width:8px;height:8px;border-radius:1px;flex:none}
+.tag-sim{background:var(--sim-wash)}
+.tag-sim::before{background:var(--sim)}
+.tag-real{background:var(--real-wash)}
+.tag-real::before{background:var(--real)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:4px 10px 4px 8px;border-radius:999px;line-height:1.2}
+.status svg{width:14px;height:14px;flex:none}
+.status.good{background:var(--good-wash);color:var(--good-ink)}
+.status.warn{background:var(--warn-wash);color:var(--warn-ink)}
+.status.bad{background:var(--bad-wash);color:var(--bad-ink)}
+
+/* charts */
+.chart{min-width:0;position:relative}
+.chart svg{display:block;max-width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--font-mono);font-size:11px;fill:var(--muted)}
+svg text.ink{fill:var(--ink)}
+svg text.ink2{fill:var(--ink-2)}
+svg text.val{fill:var(--ink);font-weight:500}
+svg text.hdr{font-size:10.5px;letter-spacing:.1em;fill:var(--muted)}
+svg .grid{stroke:var(--rule);stroke-width:1}
+svg .axis{stroke:var(--rule-strong);stroke-width:1}
+svg .l-sim{stroke:var(--sim);stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+svg .l-real{stroke:var(--real);stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+svg .l-mute{stroke:var(--muted);stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+svg .l-ink{stroke:var(--ink-2);stroke-width:2;fill:none;stroke-linecap:round}
+svg .a-real{fill:var(--real-wash)}
+svg .band-sim{fill:var(--sim-wash)}
+svg .cross{stroke:var(--ink-2);stroke-width:1}
+svg .dot-sim{fill:var(--sim);stroke:var(--surface);stroke-width:2}
+svg .dot-real{fill:var(--real);stroke:var(--surface);stroke-width:2}
+svg .dot-mute{fill:var(--muted);stroke:var(--surface);stroke-width:2}
+svg .dot-ink{fill:var(--ink);stroke:var(--surface);stroke-width:2}
+svg .bar-real{fill:var(--real)}
+svg .whisk{stroke:var(--ink);stroke-width:1.25}
+svg .connector{stroke:var(--rule-strong);stroke-width:3;stroke-linecap:round}
+svg .win-band{fill:var(--well)}
+svg .dim{stroke:var(--ink);stroke-width:1.25;fill:none}
+svg .hit{fill:transparent}
+svg .target-line{stroke:var(--ink-2);stroke-width:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink-2);margin:0}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.lk{display:inline-block;width:16px;height:2px;border-radius:1px;flex:none}
+.lk-sim{background:var(--sim)}
+.lk-real{background:var(--real)}
+.lk-mute{background:var(--muted)}
+.lk-ink{background:var(--ink-2)}
+
+/* sections */
+.sec{margin-top:88px;padding-top:26px;border-top:1px solid var(--rule)}
+.sec-no{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.sec h2{font-family:var(--font-display);font-weight:800;font-size:clamp(38px,6vw,64px);line-height:.92;letter-spacing:.005em;margin:0 0 26px;text-wrap:balance;max-width:15ch}
+.prose{max-width:660px;display:flow-root}
+.prose h3{font-family:var(--font-display);font-weight:700;font-size:clamp(27px,3.4vw,34px);line-height:1;margin:48px 0 12px;text-wrap:balance}
+.prose p{max-width:66ch}
+.note{font-size:14px;line-height:1.55;color:var(--ink-2);margin:18px 0;padding-top:10px;border-top:1px solid var(--rule)}
+.note .note-l{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.note p{margin:0 0 4px}
+@media (min-width:1100px){.note{float:right;clear:right;width:344px;margin:6px -400px 16px 0}}
+.keypoint{margin:26px 0;padding:14px 0 16px;border-top:2px solid var(--ink);border-bottom:1px solid var(--rule)}
+.keypoint .kp-l{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.keypoint p{font-size:19px;line-height:1.5;margin:0;color:var(--ink)}
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px 32px;margin:10px 0 26px}
+.kind{border-top:2px solid var(--ink);padding-top:10px}
+.kind h3{font-family:var(--font-display);font-size:30px;font-weight:700;margin:0 0 6px;line-height:1}
+.kind p{font-size:15.5px;line-height:1.55;margin:0}
+
+/* short version + contents */
+.short{margin-top:44px;display:grid;gap:30px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.short{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);column-gap:56px}}
+.short h2{font-family:var(--font-display);font-size:30px;font-weight:700;margin:0 0 12px;line-height:1}
+.short ul{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.short li{padding-left:24px;position:relative;font-size:16.5px;line-height:1.55}
+.short li::before{content:"";position:absolute;left:0;top:.72em;width:12px;height:2px;background:var(--ink)}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc a{display:grid;grid-template-columns:2em 1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--rule);text-decoration:none;font-size:15.5px}
+.toc a span{font-family:var(--font-mono);color:var(--muted);font-size:13px;padding-top:2px}
+.toc a:hover span{color:var(--ink)}
+@media(min-width:1500px){.toc{display:none}}
+.rail{display:none}
+@media (min-width:1500px){
+  .rail{display:block;position:fixed;top:calc(env(safe-area-inset-top,0px) + 92px);left:max(22px,env(safe-area-inset-left,0px));width:150px;font-size:13px}
+  .rail .rail-title{font-family:var(--font-stencil);font-weight:800;font-size:21px;text-transform:uppercase;line-height:.92;text-decoration:none;display:block;margin-bottom:16px}
+  .rail ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+  .rail a{display:grid;grid-template-columns:1.6em 1fr;padding:5px 0;text-decoration:none;color:var(--muted);line-height:1.3}
+  .rail a span{font-family:var(--font-mono)}
+  .rail a.on{color:var(--ink);font-weight:500}
+}
+
+/* fig 1 */
+.hero-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:720px){.hero-panels{grid-template-columns:minmax(0,1fr)}}
+.hp{border:1px solid var(--rule);border-radius:6px;padding:10px 10px 2px;background:var(--paper);min-width:0}
+.hp-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 10px}
+.hp-tally{font-family:var(--font-mono);font-size:12.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+.hp svg{display:block;width:100%;height:auto}
+.marks-key{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--ink-2);margin:0}
+.marks-key span{display:inline-flex;align-items:center;gap:7px}
+.marks-key svg{width:12px;height:12px;flex:none}
+.scene text{font-family:var(--font-mono);font-size:12.5px;fill:var(--muted)}
+.scene .floor{stroke:var(--ink-2);stroke-width:1.25}
+.scene .simgrid{stroke:var(--sim);stroke-opacity:.4;stroke-width:1}
+.scene .hatch{stroke:var(--rule-strong);stroke-width:1.3}
+.scene .pebble{fill:var(--rule-strong)}
+.scene .part{fill:var(--well);stroke:var(--ink-2);stroke-width:1.25}
+.scene .estimate{fill:none;stroke:var(--real);stroke-width:1.4;stroke-dasharray:4 3}
+.scene .bracket{fill:none;stroke:var(--ink);stroke-width:1.25}
+.scene .guide{stroke:var(--rule-strong);stroke-width:1}
+.scene .grip{fill:var(--surface);stroke:var(--ink-2);stroke-width:1.25}
+.scene .grip-line{stroke:var(--ink-2);stroke-width:1.25}
+.scene .traj-sim{stroke:var(--sim);stroke-width:2;fill:none}
+.scene .traj-real{stroke:var(--real);stroke-opacity:.4;stroke-width:1;fill:none;transition:opacity .25s}
+.scene .m-held{fill:var(--real);transition:opacity .25s}
+.scene .m-held-sim{fill:var(--sim)}
+.scene .m-miss{stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;fill:none;transition:opacity .25s}
+.scene .m-slip{fill:var(--paper);stroke:var(--real);stroke-width:1.4;transition:opacity .25s}
+
+/* fig 2 */
+.cov-grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:920px){.cov-grid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}}
+.side{display:grid;gap:14px;align-content:start;min-width:0}
+.calc{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;display:grid;gap:12px;margin:24px 0}
+.calc .big{font-size:19px;line-height:1.5;margin:0}
+.calc .big b{font-weight:600}
+.calc-ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 24px}
+.calc-ctrls .ctrl{grid-template-columns:minmax(0,7.4em) minmax(0,1fr) 3.6em}
+
+/* fig 3 */
+.anat{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1040px){.anat{grid-template-columns:minmax(0,1.42fr) minmax(0,1fr)}}
+.loop-frame{border:1px dashed var(--rule-strong);border-radius:10px;padding:12px 14px 18px;display:grid;gap:16px;background:var(--paper);min-width:0}
+.frame-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.frame-l{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.loop-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:40px;padding-right:46px}
+@media(min-width:720px){
+  .loop-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"sensors perception policy" "world actuation actuation";gap:46px 50px;padding-right:0}
+  .node[data-node="world"]{grid-area:world}
+  .node[data-node="sensors"]{grid-area:sensors}
+  .node[data-node="perception"]{grid-area:perception}
+  .node[data-node="policy"]{grid-area:policy}
+  .node[data-node="actuation"]{grid-area:actuation;align-self:start}
+}
+.node{background:var(--surface);border:1px solid var(--rule-strong);border-radius:8px;padding:10px 12px 12px;display:grid;gap:3px;align-content:start;position:relative;z-index:1;min-width:0}
+.node-title{font-family:var(--font-display);font-weight:800;font-size:23px;line-height:1;margin:0;text-transform:uppercase;letter-spacing:.03em}
+.node-sub{font-size:12.5px;color:var(--muted);margin:0 0 7px;line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;font:500 13px/1.25 var(--font-body);color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:999px;padding:5px 11px 5px 9px;cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.meter{display:inline-flex;gap:2px;flex:none}
+.meter i{width:4px;height:10px;border-radius:1px;background:currentColor;opacity:.22}
+.meter i.on{opacity:1}
+.so{font:600 9px/1 var(--font-mono);letter-spacing:.06em;border:1px solid currentColor;border-radius:2px;padding:2px 3px;flex:none}
+.loop-arrows{position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:0}
+.loop-edge{fill:none;stroke:var(--ink-2);stroke-width:1.5}
+.ah{fill:var(--ink-2)}
+.gap-detail{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px 18px;min-width:0;align-self:start}
+.gd-where{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.gd-title{font-family:var(--font-display);font-weight:800;font-size:34px;line-height:.95;margin:0 0 8px}
+.gd-tier{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);margin:0 0 14px}
+.gd-rows{margin:0;display:grid;gap:4px}
+.gd-rows dt{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;margin-top:6px}
+.gd-rows dd{margin:0;font-size:15px;line-height:1.5}
+.gd-note{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);font-size:14px;line-height:1.5;color:var(--ink-2)}
+.gd-note p{margin:0 0 4px}
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.rung{background:var(--surface);padding:12px;display:grid;gap:8px;align-content:start}
+.rung h4{margin:0;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;line-height:1.3}
+.rung p{margin:0;font-size:13px;color:var(--ink-2);line-height:1.45}
+.rung .chips{gap:5px}
+
+/* fig 4 */
+.eb-grid{display:grid;gap:22px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.eb-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)}}
+.eb-group h4{margin:12px 0 4px;font-size:13.5px;font-weight:600;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.eb-group h4 span{font-family:var(--font-mono);font-weight:400;font-size:11.5px;color:var(--muted)}
+.src{display:grid;grid-template-columns:minmax(0,1fr) minmax(84px,140px) 4.8em;align-items:center;gap:4px 12px;padding:8px 0;border-top:1px solid var(--rule)}
+.src-name{font-size:14px;font-weight:500;display:block;line-height:1.3}
+.src-help{font-size:12px;color:var(--muted);display:block;line-height:1.35;margin-top:1px}
+.src output{font-family:var(--font-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.src-fixed{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right}
+@media(max-width:540px){
+  .src{grid-template-columns:minmax(0,1fr) 4.8em}
+  .src .src-l{grid-column:1;grid-row:1}
+  .src output{grid-column:2;grid-row:1}
+  .src input,.src .src-fixed{grid-column:1/-1;grid-row:2;text-align:left}
+}
+.eb-totals{display:grid;gap:5px;margin-top:6px;padding-top:10px;border-top:2px solid var(--ink)}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--ink-2)}
+.kv b{font-family:var(--font-mono);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.fitbars{display:grid;gap:7px;margin-top:8px}
+.fb{display:grid;grid-template-columns:7.6em minmax(0,1fr) 5.4em;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.fb-track{height:12px;position:relative}
+.fb-bar{position:absolute;top:0;bottom:0;left:0;border-radius:0 3px 3px 0}
+.fb-bar.win{border:1.5px solid var(--ink);border-radius:2px;background:transparent}
+.fb-bar.spread{background:var(--real)}
+.fb-v{font-family:var(--font-mono);text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.eb-out{display:grid;gap:14px;align-content:start;min-width:0}
+
+/* fig 5 */
+.lat-top{display:grid;gap:12px 28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:860px){.lat-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.lat-ctrls{display:grid;gap:10px;align-content:start}
+.verdict-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.scene-rails text{font-family:var(--font-mono);font-size:11px;fill:var(--muted)}
+.rail-line{stroke:var(--rule-strong);stroke-width:2;stroke-linecap:round}
+.car-sim{fill:var(--sim)}
+.car-real{fill:var(--real)}
+.car-ghost{fill:none;stroke:var(--real);stroke-width:1.4;stroke-dasharray:3 2}
+.tgt-mark{stroke:var(--ink);stroke-width:1.5}
+
+/* fig 7 */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:0;position:relative}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+table.tools{border-collapse:collapse;min-width:980px;width:100%;font-size:14px}
+.tools th,.tools td{border-bottom:1px solid var(--rule);padding:10px 8px;vertical-align:top;text-align:left}
+.tools thead th{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.03em;color:var(--muted);vertical-align:bottom;line-height:1.3}
+.tools thead th.c{text-align:center;width:74px}
+.tools td.c{text-align:center;vertical-align:middle}
+.tools tbody th{font-weight:400;min-width:210px}
+.tools .t-name{font-weight:600;display:block}
+.tools .t-what{color:var(--ink-2);font-size:13.5px;display:block;line-height:1.45}
+.tools .t-ex{font-family:var(--font-mono);font-size:11px;color:var(--muted);display:block;margin-top:2px}
+.tools .t-catch{color:var(--ink-2);font-size:13px;line-height:1.45;min-width:200px}
+.dot{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid var(--ink);vertical-align:middle}
+.dot.full{background:var(--ink)}
+.dot.half{background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
+
+/* fig 8 */
+.peng{display:grid;gap:22px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.peng{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:36px}}
+.peng > div{display:grid;gap:10px;align-content:start;min-width:0}
+
+/* fig 9 */
+.targets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media(max-width:820px){.targets{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tgt{display:grid;gap:6px;align-content:start;min-width:0}
+.tgt svg{display:block;width:100%;max-width:220px;height:auto}
+.tgt .tt{font-size:14px;font-weight:600;line-height:1.3;margin:0}
+.tgt .ts{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin:0}
+.tgt .tv{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin:0}
+.tgt .ring{fill:none;stroke:var(--rule);stroke-width:1}
+.tgt .pt{fill:var(--real)}
+.tgt .rp{fill:none;stroke:var(--ink-2);stroke-width:1.2}
+.tgt .ap{stroke:var(--ink);stroke-width:1.5}
+.tgt .cmd{fill:none;stroke:var(--ink);stroke-width:1.5}
+.tgt .bary{stroke:var(--ink);stroke-width:1.5}
+.tgt-key{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink-2);margin:0}
+.tgt-key span{display:inline-flex;align-items:center;gap:7px}
+.tgt-key svg{width:14px;height:14px;flex:none}
+
+/* fig 10 */
+.fleet-ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 28px;align-items:center}
+.fleet-ctrls .ctrl{grid-template-columns:minmax(0,9em) minmax(0,1fr) 4.4em}
+.heat-key{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--ink-2);font-family:var(--font-mono)}
+.heat-key .ramp{display:inline-flex;gap:2px}
+.heat-key .ramp i{width:22px;height:12px;display:inline-block;border-radius:2px}
+.heat-key .ramp-l{display:inline-flex;gap:2px}
+.heat-key .ramp-l span{width:22px;text-align:center;font-size:10.5px}
+.fleet-table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+.fleet-table th,.fleet-table td{padding:6px 8px;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums}
+.fleet-table th:first-child,.fleet-table td:first-child{text-align:left}
+.fleet-table th{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--muted)}
+
+/* fig 11 */
+.ci-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;font-size:15px}
+.ci-in label{display:inline-flex;align-items:center;gap:8px}
+.ci-out{font-size:16px;margin:0}
+.ci-out b{font-family:var(--font-mono);font-weight:500}
+
+/* fig 12 */
+.lanes-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:0}
+.lanes-wrap svg{min-width:760px;width:100%;height:auto;display:block}
+.lanes .lane-real{fill:var(--real-wash)}
+.lanes .lane-sim{fill:var(--sim-wash)}
+.lanes .gapline{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:2 5}
+.lanes .gapbg{fill:var(--surface)}
+.lanes .gaplabel{font-size:11px;letter-spacing:.16em;fill:var(--ink)}
+.lanes .nd{fill:var(--surface);stroke:var(--rule-strong);stroke-width:1.2}
+.lanes .badge{fill:var(--ink)}
+.lanes .badge-t{fill:var(--surface);font-size:11px;font-weight:600}
+.lanes .nt{font-family:var(--font-body);font-size:14px;font-weight:600;fill:var(--ink)}
+.lanes .ns{font-size:11px;fill:var(--muted)}
+.lanes .edge{fill:none;stroke:var(--ink-2);stroke-width:1.5}
+.lanes .el{font-size:11px;fill:var(--ink-2)}
+.steps{display:flex;flex-wrap:wrap;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;list-style:none;padding:0;margin:0}
+.steps li{background:var(--surface);padding:14px 16px;display:grid;gap:4px;align-content:start;flex:1 1 300px;min-width:0}
+.steps .sn{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.steps h4{margin:0;font-size:15px;font-weight:600}
+.steps p{margin:0;font-size:14px;line-height:1.5;color:var(--ink-2)}
+pre.manifest{font-family:var(--font-mono);font-size:12.5px;line-height:1.65;background:var(--well);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:0;color:var(--ink)}
+pre.manifest .c{color:var(--muted)}
+pre.manifest .k{color:var(--ink-2)}
+
+/* sources */
+ol.refs{font-size:14px;line-height:1.5;color:var(--ink-2);padding-left:1.5em;margin:0;max-width:78ch}
+ol.refs li{margin-bottom:9px}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--font-mono);font-size:12px;color:var(--muted);line-height:1.6}
+
+/* tooltip */
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;line-height:1.45;padding:8px 10px;border-radius:5px;max-width:270px;box-shadow:0 6px 20px var(--shadow)}
+.tip .tip-t{font-family:var(--font-mono);font-size:11px;opacity:.8;margin-bottom:3px}
+.tip .tip-r{display:flex;align-items:center;gap:7px}
+.tip .tip-r b{font-weight:600;font-variant-numeric:tabular-nums}
+.tip .tip-k{width:12px;height:2px;flex:none;border-radius:1px}
+.tip .tip-k.sim{background:var(--sim)}
+.tip .tip-k.real{background:var(--real)}
+.tip .tip-k.mute{background:var(--muted)}
+.tip .tip-k.ink{background:var(--surface)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<nav class="rail" aria-label="Sections">
+  <a class="rail-title" href="#top">Sim2Real Gap</a>
+  <ol>
+    <li><a href="#gap"><span>1</span>What the gap is</a></li>
+    <li><a href="#anatomy"><span>2</span>Where sims fall short</a></li>
+    <li><a href="#compound"><span>3</span>Why small gaps bite</a></li>
+    <li><a href="#bridge"><span>4</span>Closing the gap</a></li>
+    <li><a href="#deploy"><span>5</span>Deploying repeatably</a></li>
+    <li><a href="#sources"><span>·</span>Sources</a></li>
+  </ol>
+</nav>
+
+<main class="page" id="top">
+  <header class="hero">
+    <p class="eyebrow">Field guide · robots in unstructured places</p>
+    <h1 class="wordmark">The <span class="w-sim">Sim</span><span class="w-two">2</span><span class="w-real">Real</span> Gap</h1>
+    <p class="lede">A simulator is a hypothesis about the world. A policy trained inside it learns the hypothesis, including the parts that are wrong. The gap is everything the hypothesis leaves out. It is why a robot can succeed every time on screen and only most of the time on site.</p>
+    <p class="key"><span><i class="sw sw-sim"></i>Blue is always the simulator</span><span><i class="sw sw-real"></i>Orange is always the real site</span></p>
+
+    <figure class="fig" id="fig1" aria-labelledby="fig1-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 1</span>
+        <p class="fig-title" id="fig1-t">The same pick, 60 times</p>
+        <div class="fig-actions">
+          <button class="btn" id="h-run" type="button">Run again</button>
+          <button class="btn" id="h-next" type="button">Next cell</button>
+        </div>
+      </div>
+      <div class="hero-panels">
+        <div class="hp">
+          <div class="hp-head"><span class="tag tag-sim">Simulator</span><span class="hp-tally">60 of 60 held</span></div>
+          <svg class="scene" id="h-sim" viewBox="0 0 400 292" role="img" aria-label="Simulator: 60 identical attempts follow one path and all land in the grasp window."></svg>
+        </div>
+        <div class="hp">
+          <div class="hp-head"><span class="tag tag-real">Site · cell <span id="h-cell">B3</span></span><span class="hp-tally" id="h-tally-real" aria-live="polite"></span></div>
+          <svg class="scene" id="h-real" viewBox="0 0 400 292" role="img" aria-label="Site: the same 60 attempts spread out around a biased camera estimate; some miss the window and some slip."></svg>
+        </div>
+      </div>
+      <p class="marks-key">
+        <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.4" fill="var(--real)"/></svg>held</span>
+        <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5L9.5 9.5M2.5 9.5L9.5 2.5" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg>missed the ±4 mm window</span>
+        <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.2" fill="var(--paper)" stroke="var(--real)" stroke-width="1.5"/></svg>slipped out during the lift</span>
+      </p>
+      <figcaption>
+        <p>Every simulated attempt is identical, so 60 runs collapse into one line. On site, the same code on the same robot model spreads out. Calibration puts the camera’s estimate of the part a little off, sensing and slip add noise to every attempt, and an oily part sometimes slides out of the fingers. Run it again and the count changes. Move to another cell and the whole cloud shifts, because each cell carries its own calibration error.</p>
+        <p class="model-note">Model: ±4 mm grasp window · random error σ 2.45 mm per attempt · cell bias drawn with σ 2.21 mm · slip when part friction is below 0.25. These are the defaults of Fig. 4.</p>
+      </figcaption>
+    </figure>
+  </header>
+
+  <section class="short" aria-labelledby="short-h">
+    <div>
+      <h2 id="short-h">The short version</h2>
+      <ul>
+        <li>The gap is a mismatch between the worlds you simulated and the world you deploy into. Wrong numbers can be measured or randomized. Missing physics cannot be fixed by any setting.</li>
+        <li>Simulators handle rigid-body motion well. Most of the gap sits in what they leave out unless you add it: actuator limits, sensor noise, calibration error, delay and wear.</li>
+        <li>Small gaps compound. Millimetres stack against tolerances, milliseconds destabilize fast loops, and a 2% shortfall per step halves a 30-step task.</li>
+        <li>Randomization buys coverage and costs sharpness. Adaptation, real data and forgiving hardware recover the rest.</li>
+        <li>Repeatability belongs to the fleet, not the robot. Failures cluster by unit, site and day, and a success rate needs hundreds of trials before it means much.</li>
+      </ul>
+    </div>
+    <nav class="toc" aria-label="Contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#gap"><span>1</span>One world in training, another on site</a></li>
+        <li><a href="#anatomy"><span>2</span>Where simulators fall short</a></li>
+        <li><a href="#compound"><span>3</span>Why small gaps become big failures</a></li>
+        <li><a href="#bridge"><span>4</span>Closing the gap</a></li>
+        <li><a href="#deploy"><span>5</span>Working once versus working every time</a></li>
+        <li><a href="#sources"><span>·</span>Sources</a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <!-- ===================== 1 ===================== -->
+  <section class="sec" id="gap" aria-labelledby="gap-h">
+    <p class="sec-no">Section 1</p>
+    <h2 id="gap-h">One world in training, another on site</h2>
+    <div class="prose">
+      <p>Training in simulation means sampling worlds from a distribution someone wrote down: masses, friction values, camera models, object sets, lighting. The policy becomes good at that distribution. Deployment samples worlds from the real distribution, which nobody wrote down. The sim2real gap is the difference between the two, as the policy experiences it.</p>
+      <p>The mismatch comes in two kinds, and they need different fixes.</p>
+    </div>
+    <div class="kinds">
+      <div class="kind">
+        <h3>Parameter error</h3>
+        <p>The simulator has the right physics with the wrong numbers. Friction is set to 0.8 where the part is oily and the real value is 0.3. Latency is zero where the real loop takes 40 ms. Fix it by measuring the real value, or by training across a range that includes it.</p>
+      </div>
+      <div class="kind">
+        <h3>Model error</h3>
+        <p>The simulator is missing the physics. Soil that compacts, a hose that whips, a dusty lens, a gearbox with backlash. No setting of the existing knobs reproduces it. Fix it by adding a model, learning one from real data, or making the robot indifferent to it.</p>
+      </div>
+    </div>
+
+    <figure class="fig" id="fig2" aria-labelledby="fig2-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 2</span>
+        <p class="fig-title" id="fig2-t">Randomization buys coverage and costs sharpness</p>
+      </div>
+      <div class="seg" id="cov-presets" role="group" aria-label="Training setups">
+        <button type="button" data-p="datasheet"><span>Datasheet value</span><span class="seg-sub">μ 0.80, narrow</span></button>
+        <button type="button" data-p="sysid"><span>Measured average</span><span class="seg-sub">system identification</span></button>
+        <button type="button" data-p="wide"><span>Wide randomization</span><span class="seg-sub">μ 0.10 to 1.10</span></button>
+        <button type="button" data-p="adapt"><span>Wide + adaptation</span><span class="seg-sub">policy infers μ</span></button>
+      </div>
+      <div class="cov-grid">
+        <div class="chart" id="cov-main"></div>
+        <div class="side">
+          <label class="ctrl" for="cov-c"><span>Range centre</span><input id="cov-c" type="range" min="0.2" max="1.0" step="0.01" value="0.8"><output id="cov-c-o" for="cov-c">0.80</output></label>
+          <label class="ctrl" for="cov-w"><span>Range width</span><input id="cov-w" type="range" min="0" max="1.2" step="0.02" value="0.1"><output id="cov-w-o" for="cov-w">0.10</output></label>
+          <label class="check" for="cov-a"><input id="cov-a" type="checkbox"> Policy adapts online</label>
+          <div class="tiles">
+            <div class="tile"><span class="l">Conditions covered</span><span class="v" id="cov-cov">–</span></div>
+            <div class="tile"><span class="l">Success inside its range</span><span class="v" id="cov-h">–</span></div>
+            <div class="tile"><span class="l"><i class="sw sw-real"></i>Expected on site</span><span class="v" id="cov-exp">–</span></div>
+          </div>
+          <p class="sub-h">Expected success on site as the range widens</p>
+          <div class="chart" id="cov-mini"></div>
+          <p class="legend" id="cov-mini-key"><span><i class="lk lk-real"></i><span id="cov-key-cur">this policy</span></span><span><i class="lk lk-mute"></i><span id="cov-key-oth">with adaptation</span></span></p>
+          <p class="model-note" id="cov-best"></p>
+        </div>
+      </div>
+      <figcaption>
+        <p>Top: the friction a gripper actually meets across one site’s conditions. Bottom: where a policy trained on the shaded range succeeds. Training on one value works only near that value. Measuring the site’s average (system identification) lands between the conditions the site actually has. Widening the range covers them, but a policy that must work everywhere grips harder and moves more cautiously, so its success at any single value drops. A policy that infers friction from how the part responds recovers most of that loss.</p>
+        <p class="model-note">Illustrative model. Site mix: 25% oily or wet parts (μ ≈ 0.30), 30% dusty (≈ 0.52), 45% clean and dry (≈ 0.78).</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <aside class="note"><p class="note-l">Field note · Peng et al. 2018</p><p>One puck-pushing task on a Fetch arm randomized 95 dynamics parameters: the mass of each link, the damping of each joint, the puck’s mass, friction and damping, the table height, controller gains, the time between actions, and observation noise.</p></aside>
+      <p>One slider understates the problem. A real robot has dozens of uncertain parameters, and the policy needs all of them inside its training ranges at the same time.</p>
+      <div class="calc" id="dimcalc">
+        <p class="big">If each of <b id="dc-k-o">20</b> uncertain parameters lands inside its training range <b id="dc-c-o">95%</b> of the time, all of them land inside together only <b id="dc-r">36%</b> of the time.</p>
+        <div class="calc-ctrls">
+          <label class="ctrl" for="dc-k"><span>Parameters</span><input id="dc-k" type="range" min="1" max="100" step="1" value="20"><output for="dc-k" id="dc-k-o2">20</output></label>
+          <label class="ctrl" for="dc-c"><span>Each covered</span><input id="dc-c" type="range" min="80" max="99.9" step="0.1" value="95"><output for="dc-c" id="dc-c-o2">95%</output></label>
+        </div>
+        <p class="model-note">Assumes the parameters vary independently. A policy that degrades gracefully just outside its ranges does better than this; one that fails sharply does worse.</p>
+      </div>
+      <p>This is why teams randomize generously, and why a policy that can estimate where it is in parameter space (Section 4) beats one that has to be robust everywhere at once.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="sec" id="anatomy" aria-labelledby="anatomy-h">
+    <p class="sec-no">Section 2</p>
+    <h2 id="anatomy-h">Where simulators fall short</h2>
+    <div class="prose">
+      <p>Every robot runs the same loop. The world moves, sensors measure it, perception turns measurements into a state estimate, a policy chooses an action, and actuators push on the world. A simulator replaces each box with a model and each arrow with an instant hand-off. The gap lives in both places: in each model’s errors, and in the time each hand-off actually takes on hardware.</p>
+      <p>Select any gap to see what the simulator assumes, what reality does instead, how it shows up on site, and what teams do about it.</p>
+    </div>
+
+    <figure class="fig" id="fig3" aria-labelledby="fig3-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 3</span>
+        <p class="fig-title" id="fig3-t">Twelve places the gap lives</p>
+      </div>
+      <div class="anat">
+        <div class="loop-frame">
+          <div class="frame-bar" id="frame-chips"><span class="frame-l">Around the loop</span></div>
+          <div class="loop-grid" id="loop-grid">
+            <svg class="loop-arrows" id="loop-arrows" aria-hidden="true"></svg>
+          </div>
+        </div>
+        <aside class="gap-detail" id="gap-detail" aria-live="polite"></aside>
+      </div>
+      <p class="sub-h">The same gaps, sorted by how well a stock simulator captures them</p>
+      <div class="ladder" id="ladder"></div>
+      <figcaption>
+        <p>The policy is the one box that runs identical code in both worlds. Only its inputs differ. Each Δt marks a hand-off that is instant in simulation and takes time on hardware. Bars show fidelity: two for approximate by default, one for absent unless you add it, none for hard to model at all.</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="sec" id="compound" aria-labelledby="compound-h">
+    <p class="sec-no">Section 3</p>
+    <h2 id="compound-h">Why small gaps become big failures</h2>
+    <div class="prose">
+      <p>Most individual gaps look small: a millimetre of calibration error, 40 milliseconds of delay, a 2% failure rate per step. They grow through three mechanisms.</p>
+      <h3>Errors stack against a tolerance</h3>
+      <p>A pick or an insertion succeeds when the gripper arrives within the task’s tolerance: the clearance, chamfer or compliance that absorbs error. Every link between camera and fingertip adds some error. In simulation most links are exact, so the budget is empty and success is 100%. On site, they all contribute.</p>
+      <p>Two kinds of error behave differently. Random error changes every attempt and widens the spread. Bias stays the same on a given cell and shifts the whole spread. It comes from calibration, kinematic error and deflection, and it differs from cell to cell. That is where deployment-to-deployment variation starts.</p>
+    </div>
+
+    <figure class="fig" id="fig4" aria-labelledby="fig4-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 4</span>
+        <p class="fig-title" id="fig4-t">An error budget for one pick</p>
+        <div class="fig-actions"><button class="btn" id="eb-reset" type="button">Reset values</button></div>
+      </div>
+      <div class="seg" id="eb-tasks" role="group" aria-label="Task"></div>
+      <div class="eb-grid">
+        <div>
+          <div class="eb-group" id="eb-bias"><h4>Same every attempt, differs by cell <span>bias</span></h4></div>
+          <div class="eb-group" id="eb-random"><h4>Different every attempt <span>random</span></h4></div>
+          <div class="eb-totals">
+            <div class="kv"><span>Random error, combined</span><b id="eb-sr">–</b></div>
+            <div class="kv"><span>Bias, cell to cell</span><b id="eb-sb">–</b></div>
+            <div class="kv"><span>Total spread, one σ</span><b id="eb-st">–</b></div>
+            <div class="fitbars">
+              <div class="fb"><span>Task window</span><span class="fb-track"><span class="fb-bar win" id="fb-win"></span></span><span class="fb-v" id="fb-win-v">–</span></div>
+              <div class="fb"><span>95% of attempts</span><span class="fb-track"><span class="fb-bar spread" id="fb-spr"></span></span><span class="fb-v" id="fb-spr-v">–</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="eb-out">
+          <div class="tiles">
+            <div class="tile"><span class="l"><i class="sw sw-sim"></i>Simulator</span><span class="v" id="eb-p-sim">–</span><span class="s">every link exact</span></div>
+            <div class="tile"><span class="l"><i class="sw sw-real"></i>Best cell</span><span class="v" id="eb-p-best">–</span><span class="s">bias calibrated out</span></div>
+            <div class="tile"><span class="l"><i class="sw sw-real"></i>Average cell</span><span class="v" id="eb-p-avg">–</span><span class="s">typical bias</span></div>
+            <div class="tile"><span class="l"><i class="sw sw-real"></i>Worst 1 in 10 cells</span><span class="v" id="eb-p-worst">–</span><span class="s">bias at 90th percentile</span></div>
+          </div>
+          <p class="legend"><span><i class="lk lk-real"></i>average cell</span><span><i class="lk lk-ink"></i>worst 1 in 10 cells</span><span><i class="lk lk-sim"></i>simulator</span></p>
+          <div class="chart" id="eb-dist"></div>
+          <p class="model-note" id="eb-task-note"></p>
+        </div>
+      </div>
+      <figcaption>
+        <p>Errors along the axis that matters, combined as root-sum-square: independent errors add in quadrature. Success is the share of attempts that land inside the window. Defaults are typical orders of magnitude for a camera about a metre from the work. Set them to your hardware.</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <div class="keypoint"><p class="kp-l">Look at the smallest number</p><p>Arm repeatability, the figure on the datasheet, barely registers. Calibration and perception dominate. Fixtured automation never needed those to be good, because it taught one pose and repeated it. A messy tote needs every link right at once.</p></div>
+
+      <h3>Delay destabilizes fast loops</h3>
+      <aside class="note"><p class="note-l">Field note · Tan et al. 2018</p><p>In the Bullet simulator, motor commands took effect instantly and sensors reported back at once. On the Minitaur robot the servo added about 3 ms and the locomotion controller about 15 to 19 ms. The team measured those delays and simulated them, alongside an improved actuator model.</p></aside>
+      <p>In simulation the robot acts on the state it sees at the instant it sees it. On hardware the image is already tens of milliseconds old by the time the motors respond: exposure, readout, transfer, inference, bus. A controller tuned for speed in a zero-delay simulator has no margin left for that delay.</p>
+    </div>
+
+    <figure class="fig" id="fig5" aria-labelledby="fig5-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 5</span>
+        <p class="fig-title" id="fig5-t">The same controller with and without delay</p>
+        <div class="fig-actions"><button class="btn" id="lat-play" type="button">Replay</button></div>
+      </div>
+      <div class="lat-top">
+        <div class="lat-ctrls">
+          <div class="seg" id="lat-presets" role="group" aria-label="Controller tuning">
+            <button type="button" data-k="12"><span>Tuned in sim for speed</span><span class="seg-sub">K = 12 /s</span></button>
+            <button type="button" data-k="4"><span>Tuned with randomized delay</span><span class="seg-sub">K = 4 /s</span></button>
+          </div>
+          <label class="ctrl" for="lat-tau"><span>Delay on site, τ</span><input id="lat-tau" type="range" min="0" max="200" step="5" value="60"><output id="lat-tau-o" for="lat-tau">60 ms</output></label>
+          <label class="ctrl" for="lat-k"><span>Gain, K</span><input id="lat-k" type="range" min="2" max="20" step="0.5" value="12"><output id="lat-k-o" for="lat-k">12 /s</output></label>
+        </div>
+        <div class="tiles">
+          <div class="tile"><span class="l">K × τ</span><span class="v" id="lat-kt">–</span><span class="s">overshoot above 0.37, unstable above 1.57</span></div>
+          <div class="tile"><span class="l"><i class="sw sw-real"></i>Overshoot on site</span><span class="v" id="lat-os">–</span></div>
+          <div class="tile"><span class="l"><i class="sw sw-real"></i>Settles on site</span><span class="v" id="lat-st">–</span><span class="s">within ±2 mm</span></div>
+          <div class="tile"><span class="l"><i class="sw sw-sim"></i>Settles in sim</span><span class="v" id="lat-sst">–</span></div>
+        </div>
+      </div>
+      <div class="verdict-row"><span id="lat-verdict" class="status good" aria-live="polite"></span><span class="model-note">Theory for this loop: overshoot appears once K·τ exceeds 1/e ≈ 0.37; it never settles once K·τ exceeds π/2 ≈ 1.57.</span></div>
+      <div class="chart" id="lat-rails"></div>
+      <p class="legend"><span><i class="lk lk-sim"></i>simulator, no delay</span><span><i class="lk lk-real"></i>site, delay τ</span><span><i class="lk lk-ink"></i>part position</span></p>
+      <div class="chart" id="lat-plot"></div>
+      <figcaption>
+        <p>An arm moves toward a part using camera feedback, commanding speed in proportion to the remaining distance (gain K, speed limit 0.5 m/s). With delay τ it acts on where the part appeared τ ago; the dashed outline on the site rail is what the camera last reported. Above π/2 the loop is unstable, and the speed limit turns the instability into a steady back-and-forth hunt. The lower gain tolerates three times the delay and settles more slowly.</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <aside class="note"><p class="note-l">Field note · Peng et al. 2018</p><p>Training with a fixed time between actions, instead of a randomized one, cut real-robot success on their pushing task from 0.89 to 0.29.</p></aside>
+      <p>Arms doing slow pick-and-place in position control tolerate delay well. Delay bites in fast or force-sensitive loops: visual servoing, contact and insertion, balancing, walking, anything near a person.</p>
+
+      <h3>Long tasks multiply small failure rates</h3>
+      <p>A task with many steps succeeds only if every step does. A simulator that is 2% optimistic per step is wildly optimistic over a 30-step task. Recovery changes the arithmetic: a failure the robot notices and retries costs time, not the task.</p>
+    </div>
+
+    <figure class="fig" id="fig6" aria-labelledby="fig6-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 6</span>
+        <p class="fig-title" id="fig6-t">Task success against number of steps</p>
+      </div>
+      <div class="fleet-ctrls">
+        <label class="ctrl" for="cp-p"><span>Success per step</span><input id="cp-p" type="range" min="90" max="99.9" step="0.1" value="98"><output id="cp-p-o" for="cp-p">98.0%</output></label>
+        <label class="ctrl" for="cp-n"><span>Steps in the task</span><input id="cp-n" type="range" min="1" max="100" step="1" value="30"><output id="cp-n-o" for="cp-n">30</output></label>
+        <label class="ctrl" for="cp-d"><span>Failures noticed</span><input id="cp-d" type="range" min="0" max="100" step="5" value="90"><output id="cp-d-o" for="cp-d">90%</output></label>
+        <label class="ctrl" for="cp-k"><span>Retries allowed</span><input id="cp-k" type="range" min="0" max="3" step="1" value="1"><output id="cp-k-o" for="cp-k">1</output></label>
+      </div>
+      <p class="ci-out" id="cp-out" aria-live="polite"></p>
+      <p class="legend"><span><i class="lk lk-sim"></i>simulator</span><span><i class="lk lk-real"></i>site, with recovery</span><span><i class="lk lk-mute"></i>site, no recovery</span></p>
+      <div class="chart" id="cp-chart"></div>
+      <figcaption>
+        <p>Each step succeeds with the probability set above. A failed step is noticed with the probability set above and retried up to the allowed number of times; an unnoticed failure ends the task.</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>Simulators rarely teach recovery from the failures that happen on site, because they do not produce those failures. That is one more reason to bring real failures back into simulation (Section 5).</p>
+    </div>
+  </section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="sec" id="bridge" aria-labelledby="bridge-h">
+    <p class="sec-no">Section 4</p>
+    <h2 id="bridge-h">Closing the gap</h2>
+    <div class="prose">
+      <p>There are four software moves and one hardware move. <strong>Narrow</strong> the gap by measuring reality and making the simulator match (system identification). <strong>Cover</strong> it by training across ranges wide enough to include reality (domain randomization). <strong>Infer</strong> it online, letting the policy estimate hidden parameters from what it observes (adaptation). <strong>Close</strong> the remainder with real data. And <strong>widen the tolerance</strong> with hardware that forgives error: chamfers, compliance, suction, force control.</p>
+    </div>
+
+    <figure class="fig" id="fig7" aria-labelledby="fig7-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 7</span>
+        <p class="fig-title" id="fig7-t">Which technique addresses which gap</p>
+      </div>
+      <p class="legend"><span><i class="dot full"></i>addresses it directly</span><span><i class="dot half"></i>helps partly</span></p>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Techniques against gap types, scrollable">
+        <table class="tools" id="tools"></table>
+      </div>
+      <figcaption><p>Rule-of-thumb ratings for orientation, not benchmark results. The columns group the twelve gaps from Fig. 3.</p></figcaption>
+    </figure>
+
+    <div class="prose">
+      <aside class="note"><p class="note-l">Field note · OpenAI 2019</p><p>The Rubik’s-cube hand was trained entirely in simulation with automatic domain randomization, which widened the ranges as the policy improved. On the real Shadow Hand it succeeded 60% of the time on scrambles needing 15 rotations and 20% on the hardest, needing 26.</p></aside>
+      <aside class="note"><p class="note-l">Field note · Kumar et al. 2021</p><p>RMA trained a quadruped policy entirely in simulation, plus a module that estimates terrain and payload from the last fraction of a second of motion. Deployed without fine-tuning, the A1 walked on sand, mud, hiking trails, tall grass and a dirt pile with no failures in the authors’ trials.</p></aside>
+      <p>The best-documented example measured the same policies in both worlds. Peng and colleagues trained a Fetch arm to push a puck to a target, entirely in simulation, then tested on the real arm.</p>
+    </div>
+
+    <figure class="fig" id="fig8" aria-labelledby="fig8-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 8</span>
+        <p class="fig-title" id="fig8-t">One task, measured in both worlds</p>
+      </div>
+      <div class="peng">
+        <div>
+          <p class="sub-h">Success in simulation and on the real robot</p>
+          <p class="legend"><span><i class="sw sw-sim" style="border-radius:50%"></i>simulation</span><span><i class="sw sw-real" style="border-radius:50%"></i>real robot</span></p>
+          <div class="chart" id="peng-d"></div>
+        </div>
+        <div>
+          <p class="sub-h">Real-robot success when one randomization is removed (LSTM policy)</p>
+          <div class="chart" id="peng-b"></div>
+        </div>
+      </div>
+      <figcaption>
+        <p>The policy with memory (an LSTM) can infer the dynamics from how the puck has responded so far, a built-in form of adaptation, and loses almost nothing on transfer. Without randomization, a policy that succeeds about half the time in simulation never succeeds on the robot. Removing just the action-timing or observation-noise randomization costs more than half of the real-world success.</p>
+        <p class="model-note">Data: Peng, Andrychowicz, Zaremba &amp; Abbeel, ICRA 2018, Tables II and III, ± as reported. Real-robot trials per policy: 28, 20, 12 and 10.</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <h3>What is changing</h3>
+      <p>GPU-parallel simulators make it cheap to train across thousands of randomized worlds at once. Isaac Lab and MuJoCo Playground are widely used, and in 2025 NVIDIA, Google DeepMind and Disney Research announced Newton, an open physics engine now hosted by the Linux Foundation. That makes randomization cheaper. It does not add physics a simulator is missing. Learned world models, trained on video, are starting to cover appearance and variety, with no guarantee that their contact physics is right.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 5 ===================== -->
+  <section class="sec" id="deploy" aria-labelledby="deploy-h">
+    <p class="sec-no">Section 5</p>
+    <h2 id="deploy-h">Working once versus working every time</h2>
+    <div class="prose">
+      <p>Crossing the gap once, on one robot, on one day, is a demo. Deployment means the same result across units, sites, shifts and months. That is a separate problem, with its own failure modes.</p>
+      <h3>Accuracy and repeatability are different numbers</h3>
+      <aside class="note"><p class="note-l">Standard · ISO 9283</p><p>Pose accuracy: the distance between the commanded pose and the mean of the poses actually reached. Pose repeatability: RP = l̄ + 3·S<sub>l</sub>, the mean distance of the reached poses from their own centre plus three standard deviations of that distance.</p></aside>
+      <p>Industrial standards separate two questions. Does the arm go where it was told, on average? That is accuracy. Does it go to the same place every time? That is repeatability.</p>
+    </div>
+
+    <figure class="fig" id="fig9" aria-labelledby="fig9-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 9</span>
+        <p class="fig-title" id="fig9-t">Four ways to hit a target</p>
+      </div>
+      <div class="targets" id="targets"></div>
+      <p class="tgt-key">
+        <span><svg viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="3" width="8" height="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/></svg>commanded pose</span>
+        <span><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="3" fill="var(--real)"/></svg>reached pose</span>
+        <span><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7H11M7 3V11" stroke="var(--ink)" stroke-width="1.5"/></svg>their mean</span>
+        <span><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--ink-2)" stroke-width="1.2"/></svg>repeatability radius RP</span>
+      </p>
+      <figcaption><p>Accuracy (AP) is the offset of the mean from the command. Repeatability (RP) is the radius of the cloud around its own mean, computed here the ISO 9283 way from the dots drawn. Illustrative scale: 10 px = 1 mm.</p></figcaption>
+    </figure>
+
+    <div class="prose">
+      <aside class="note"><p class="note-l">Data · arm specs and calibration</p><p>Universal Robots rates the UR5e at ±0.03 mm pose repeatability per ISO 9283. In Nubiola Batlle’s 2014 calibration work at ÉTS Montréal, calibration cut an industrial arm’s mean distance error across its workspace from 1.062 mm to 0.400 mm.</p></aside>
+      <p>Arms are built to be repeatable: a UR5e is rated at ±0.03 mm. Their absolute accuracy is far worse. An uncalibrated industrial arm is commonly off by around a millimetre and sometimes several, and careful calibration brings that down to a few tenths.</p>
+      <div class="keypoint"><p class="kp-l">Why unstructured work is harder</p><p>Classical automation needs only repeatability. Teach a pose once, fixture the part, and the arm returns to it within hundredths of a millimetre for years. Unstructured work removes the fixture. Every target is computed from perception, so success depends on accuracy, which means every model in the loop being right at the same time. This is the sim2real gap showing up as a calibration problem, and it is why two identical cells can perform differently.</p></div>
+
+      <h3>A fleet’s failures have structure</h3>
+      <p>Run the same software on 12 cells at 3 sites for 30 days. The result is not one success rate. Failures cluster by unit, by site and day, and by time since the last calibration. Each pattern points to a different cause.</p>
+    </div>
+
+    <figure class="fig" id="fig10" aria-labelledby="fig10-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 10</span>
+        <p class="fig-title" id="fig10-t">30 days of a simulated fleet</p>
+        <div class="fig-actions">
+          <button class="btn" id="fl-shuffle" type="button">New fleet</button>
+          <button class="btn" id="fl-table-btn" type="button" aria-expanded="false" aria-controls="fl-table-wrap">Show table</button>
+        </div>
+      </div>
+      <div class="fleet-ctrls">
+        <label class="ctrl" for="fl-unit"><span>Unit-to-unit spread</span><input id="fl-unit" type="range" min="0" max="1.2" step="0.05" value="0.45"><output id="fl-unit-o" for="fl-unit">0.45</output></label>
+        <label class="ctrl" for="fl-site"><span>Site and weather</span><input id="fl-site" type="range" min="0" max="0.8" step="0.05" value="0.35"><output id="fl-site-o" for="fl-site">0.35</output></label>
+        <label class="ctrl" for="fl-wear"><span>Wear per day</span><input id="fl-wear" type="range" min="0" max="0.15" step="0.005" value="0.05"><output id="fl-wear-o" for="fl-wear">0.050</output></label>
+        <label class="ctrl" for="fl-recal"><span>Recalibrate every</span><select id="fl-recal"><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option><option value="0">never</option></select><span></span></label>
+      </div>
+      <div class="tiles" id="fl-tiles">
+        <div class="tile"><span class="l">Fleet average</span><span class="v" id="fl-avg">–</span></div>
+        <div class="tile"><span class="l">Best unit</span><span class="v" id="fl-best">–</span><span class="s" id="fl-best-n"></span></div>
+        <div class="tile"><span class="l">Worst unit</span><span class="v" id="fl-worst">–</span><span class="s" id="fl-worst-n"></span></div>
+        <div class="tile"><span class="l">Failures from the worst 2 units</span><span class="v" id="fl-share">–</span><span class="s">of all failures</span></div>
+        <div class="tile"><span class="l">Unit-days below 90%</span><span class="v" id="fl-low">–</span><span class="s">of 360</span></div>
+      </div>
+      <div class="heat-key" id="fl-key"></div>
+      <div class="chart" id="fl-heat"></div>
+      <div class="table-wrap" id="fl-table-wrap" hidden></div>
+      <figcaption>
+        <p>Each square is one unit’s failure rate for one day of 150 picks. Rows that stay dark point to a unit: hardware or calibration. Columns that darken across a site point to the environment: weather, light, a new batch of parts. Gradients that reset point to wear and recalibration. The fleet average hides all three.</p>
+        <p class="model-note">Simulated data. Success on the logit scale = base + unit effect + site effect + site-day effect + occasional site shocks − wear × days since calibration, then sampled.</p>
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <h3>How many trials before a number means something</h3>
+      <p>A success rate measured over a few trials is an interval, not a number. Many robot-learning results are reported over 10 to 50 real trials; the Peng et al. figures above used 10 to 28.</p>
+    </div>
+
+    <figure class="fig" id="fig11" aria-labelledby="fig11-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 11</span>
+        <p class="fig-title" id="fig11-t">What a measured success rate actually tells you</p>
+      </div>
+      <div class="ci-in">
+        <label for="ci-k">Successes <input id="ci-k" type="number" min="0" max="20" step="1" value="19" inputmode="numeric"></label>
+        <label for="ci-n">out of <input id="ci-n" type="number" min="1" max="5000" step="1" value="20" inputmode="numeric"></label>
+        <span>trials</span>
+      </div>
+      <p class="ci-out" id="ci-out" aria-live="polite"></p>
+      <div class="chart" id="ci-chart"></div>
+      <p class="ci-out" id="ci-zero"></p>
+      <label class="ctrl" for="ci-ops" style="max-width:560px"><span>Picks per day on site</span><input id="ci-ops" type="range" min="50" max="5000" step="50" value="1000"><output id="ci-ops-o" for="ci-ops">1,000</output></label>
+      <p class="ci-out" id="ci-ops-out" aria-live="polite"></p>
+      <figcaption><p>Exact 95% confidence intervals (Clopper–Pearson). Ten out of ten is consistent with a true success rate as low as 69%.</p></figcaption>
+    </figure>
+
+    <div class="prose">
+      <h3>A deployment loop that crosses the gap on purpose</h3>
+      <p>Teams that deploy repeatably treat the gap as something to measure all the time, rather than something to close once. Each cycle crosses it twice: failures travel from site to simulation as logs and scans, and fixes travel back as versioned releases.</p>
+    </div>
+
+    <figure class="fig" id="fig12" aria-labelledby="fig12-t">
+      <div class="fig-head">
+        <span class="fig-no">Fig. 12</span>
+        <p class="fig-title" id="fig12-t">The deployment loop</p>
+      </div>
+      <div class="lanes-wrap" tabindex="0" role="region" aria-label="Deployment loop diagram, scrollable">
+        <svg class="lanes" viewBox="0 0 1000 330" role="img" aria-label="Site lane: survey, calibrate and self-test, roll out in stages, log every attempt. Logs cross to the simulation lane, where failures are rebuilt and a release is gated, then the versioned release crosses back to calibration and rollout.">
+          <defs><marker id="lah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+          <rect x="0" y="8" width="1000" height="132" rx="8" class="lane-real"/>
+          <rect x="0" y="190" width="1000" height="132" rx="8" class="lane-sim"/>
+          <text x="14" y="28" class="hdr">SITE</text>
+          <text x="14" y="210" class="hdr">SIMULATION</text>
+          <line x1="0" x2="1000" y1="165" y2="165" class="gapline"/>
+          <rect x="588" y="156" width="74" height="18" class="gapbg"/>
+          <text x="625" y="169" class="gaplabel" text-anchor="middle">THE GAP</text>
+
+          <g transform="translate(30,46)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">1</text><text x="36" y="25" class="nt">Survey the site</text><text x="36" y="45" class="ns">light, dust, part mix</text></g>
+          <g transform="translate(280,46)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">2</text><text x="36" y="25" class="nt">Calibrate, self-test</text><text x="36" y="45" class="ns">every start and shift</text></g>
+          <g transform="translate(530,46)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">3</text><text x="36" y="25" class="nt">Roll out in stages</text><text x="36" y="45" class="ns">shadow, canary, fleet</text></g>
+          <g transform="translate(780,46)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">4</text><text x="36" y="25" class="nt">Log every attempt</text><text x="36" y="45" class="ns">per unit, per site</text></g>
+          <g transform="translate(30,228)"><rect width="190" height="64" rx="7" class="nd"/><text x="16" y="25" class="nt">Site model</text><text x="16" y="45" class="ns">profile + scans</text></g>
+          <g transform="translate(280,228)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">6</text><text x="36" y="25" class="nt">Gate the release</text><text x="36" y="45" class="ns">sim suite + real tasks</text></g>
+          <g transform="translate(780,228)"><rect width="190" height="64" rx="7" class="nd"/><circle cx="18" cy="20" r="10" class="badge"/><text x="18" y="24" class="badge-t" text-anchor="middle">5</text><text x="36" y="25" class="nt">Rebuild in sim</text><text x="36" y="45" class="ns">replay and classify</text></g>
+
+          <path d="M222,78H276" class="edge" marker-end="url(#lah)"/>
+          <path d="M472,78H526" class="edge" marker-end="url(#lah)"/>
+          <path d="M722,78H776" class="edge" marker-end="url(#lah)"/>
+          <path d="M875,112V224" class="edge" marker-end="url(#lah)"/>
+          <text x="867" y="146" class="el" text-anchor="end">logs, clips, scans</text>
+          <path d="M778,260H474" class="edge" marker-end="url(#lah)"/>
+          <text x="626" y="251" class="el" text-anchor="middle">fixes: models, ranges, policy</text>
+          <path d="M375,226V114" class="edge" marker-end="url(#lah)"/>
+          <text x="383" y="146" class="el">versioned release</text>
+          <path d="M125,112V224" class="edge" marker-end="url(#lah)"/>
+          <text x="133" y="146" class="el">profile, scans</text>
+          <path d="M222,260H276" class="edge" marker-end="url(#lah)"/>
+        </svg>
+      </div>
+      <ol class="steps">
+        <li><span class="sn">1</span><h4>Survey the site</h4><p>Light levels across the day, surfaces, dust, temperature, network, the real mix of parts. Scan the cell. Turn it into a site profile and randomize around it.</p></li>
+        <li><span class="sn">2</span><h4>Calibrate and self-test every start</h4><p>Check hand–eye calibration against a fixed fiducial, home the joints, test the gripper, check sensor health. Refuse to start when residuals exceed the error budget.</p></li>
+        <li><span class="sn">3</span><h4>Roll out in stages</h4><p>Shadow mode first, where the policy proposes and the existing process acts. Then one canary cell, then the fleet. Keep the previous release one switch away.</p></li>
+        <li><span class="sn">4</span><h4>Log every attempt, per unit</h4><p>Outcome, failure type, latency percentiles, temperatures, calibration residuals. Alert on per-unit and per-site trends, not just the fleet average.</p></li>
+        <li><span class="sn">5</span><h4>Rebuild failures in simulation</h4><p>Classify each failure by gap source. Replay the logs, rebuild the scene, and add the condition to the randomization ranges and to the test suite.</p></li>
+        <li><span class="sn">6</span><h4>Gate releases on sim and real</h4><p>A release passes a simulated regression suite and a fixed set of real golden tasks, with every component versioned together.</p></li>
+      </ol>
+      <p class="sub-h">Example: what has to be pinned together to reproduce a result</p>
+<pre class="manifest"><span class="c"># deployment manifest (example values)</span>
+<span class="k">release:</span>      pick-tote 2026.10.3
+<span class="k">policy:</span>       weights 4be1…c09 · trained on sim 2.3.1 · randomization ranges r7
+<span class="k">site:</span>         profile B · open canopy · 200–90,000 lux · dust high
+<span class="k">cell:</span>         B3 · gripper pads fitted 2026-10-02
+<span class="k">calibration:</span>  hand–eye 2026-10-26 06:02 · residual 0.6 mm (budget 1.0 mm)
+<span class="k">firmware:</span>     drives 5.12.4 · camera 2.1.0 · gripper 1.8.0
+<span class="k">gate:</span>         sim suite 4,800 episodes 97.6% · real golden tasks 120 / 120</pre>
+      <figcaption><p>A real golden-task result of 120 out of 120 still only shows the true rate is above about 97% (Fig. 11). The simulated suite catches regressions cheaply; the real tasks keep the simulator honest.</p></figcaption>
+    </figure>
+
+    <div class="prose">
+      <aside class="note"><p class="note-l">Field note · Li et al. 2024</p><p>SIMPLER compared more than 1,500 paired simulated and real evaluations of manipulation policies, across two robots and eight task families, and found strong correlation once control and visual differences were matched.</p></aside>
+      <div class="keypoint"><p class="kp-l">Make the simulator earn its vote</p><p>A simulator is useful as a release gate only if it ranks changes the way reality does. Kadian et al. measured this for nine navigation models: simulated and real rankings correlated at 0.18 until they removed a wall-sliding shortcut agents had been exploiting, then 0.844. Track that correlation for your own tasks, and treat a drop as a bug in the simulator.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="sources" aria-labelledby="sources-h">
+    <h2 id="sources-h">Sources</h2>
+    <ol class="refs">
+      <li>Tobin, J. et al. (2017). Domain randomization for transferring deep neural networks from simulation to the real world. IROS. <a href="https://arxiv.org/abs/1703.06907" target="_blank" rel="noopener">arXiv:1703.06907</a></li>
+      <li>Peng, X. B., Andrychowicz, M., Zaremba, W. &amp; Abbeel, P. (2018). Sim-to-real transfer of robotic control with dynamics randomization. ICRA. <a href="https://arxiv.org/abs/1710.06537" target="_blank" rel="noopener">arXiv:1710.06537</a></li>
+      <li>Tan, J. et al. (2018). Sim-to-real: Learning agile locomotion for quadruped robots. RSS. <a href="https://arxiv.org/abs/1804.10332" target="_blank" rel="noopener">arXiv:1804.10332</a></li>
+      <li>Hwangbo, J. et al. (2019). Learning agile and dynamic motor skills for legged robots. Science Robotics 4(26). <a href="https://arxiv.org/abs/1901.08652" target="_blank" rel="noopener">arXiv:1901.08652</a></li>
+      <li>OpenAI et al. (2019). Solving Rubik’s Cube with a robot hand. <a href="https://openai.com/index/solving-rubiks-cube/" target="_blank" rel="noopener">openai.com</a></li>
+      <li>Kadian, A. et al. (2020). Sim2Real predictivity: Does evaluation in simulation predict real-world performance? IEEE RA-L. <a href="https://arxiv.org/abs/1912.06321" target="_blank" rel="noopener">arXiv:1912.06321</a></li>
+      <li>Lee, J., Hwangbo, J., Wellhausen, L., Koltun, V. &amp; Hutter, M. (2020). Learning quadrupedal locomotion over challenging terrain. Science Robotics 5(47). <a href="https://arxiv.org/abs/2010.11251" target="_blank" rel="noopener">arXiv:2010.11251</a></li>
+      <li>Kumar, A., Fu, Z., Pathak, D. &amp; Malik, J. (2021). RMA: Rapid motor adaptation for legged robots. RSS. <a href="https://arxiv.org/abs/2107.04034" target="_blank" rel="noopener">arXiv:2107.04034</a></li>
+      <li>Li, X. et al. (2024). Evaluating real-world robot manipulation policies in simulation (SIMPLER). CoRL. <a href="https://arxiv.org/abs/2405.05941" target="_blank" rel="noopener">arXiv:2405.05941</a></li>
+      <li>NASA/JPL (2009). Preparing for rover pivot test: the Spirit test bed for “Troy”. <a href="https://photojournal.jpl.nasa.gov/catalog/PIA12145" target="_blank" rel="noopener">PIA12145</a></li>
+      <li>NASA/JPL (2017). An algorithm helps protect Mars Curiosity’s wheels. <a href="https://www.jpl.nasa.gov/news/an-algorithm-helps-protect-mars-curiositys-wheels/" target="_blank" rel="noopener">jpl.nasa.gov</a></li>
+      <li>Nubiola Batlle, A. (2014). Contribution to improving the accuracy of serial robots. PhD thesis, École de technologie supérieure. <a href="https://espace.etsmtl.ca/id/eprint/1432/" target="_blank" rel="noopener">espace.etsmtl.ca</a></li>
+      <li>Universal Robots. UR5e technical specifications (pose repeatability per ISO 9283). <a href="https://www.universal-robots.com/manuals/latest/en/datasheets/ur5e/" target="_blank" rel="noopener">universal-robots.com</a></li>
+      <li>ISO 9283:1998. Manipulating industrial robots: performance criteria and related test methods.</li>
+      <li>NVIDIA (2025). Announcing Newton, an open-source physics engine for robotics simulation. <a href="https://developer.nvidia.com/blog/announcing-newton-an-open-source-physics-engine-for-robotics-simulation/" target="_blank" rel="noopener">developer.nvidia.com</a></li>
+    </ol>
+    <p class="foot">Figures 1, 2, 4, 5, 6 and 10 run small illustrative models in your browser; their parameters are stated beside each figure. Figure 8 reproduces published results. Everything else is cited above. Source: <a href="https://github.com/ZeroTimeDrift/sim2real-gap">github.com/ZeroTimeDrift/sim2real-gap</a>.</p>
+  </section>
+</main>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const doc = document;
+const $ = (s, r) => (r || doc).querySelector(s);
+const $$ = (s, r) => Array.from((r || doc).querySelectorAll(s));
+const NS = 'http://www.w3.org/2000/svg';
+const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function safe(name, fn) { try { fn(); } catch (e) { if (window.console) console.error('Figure "' + name + '" failed to draw:', e); } }
+
+/* ---------- helpers ---------- */
+function S(tag, attrs, parent) {
+  const e = doc.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(parent, x, y, str, cls, anchor) {
+  const t = S('text', { x: x, y: y, class: cls || null, 'text-anchor': anchor || null }, parent);
+  t.textContent = str;
+  return t;
+}
+function H(tag, attrs, parent, text) {
+  const e = doc.createElement(tag);
+  if (attrs) for (const k in attrs) { if (k === 'class') e.className = attrs[k]; else e.setAttribute(k, attrs[k]); }
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svgEl(W, Hh, label) { return S('svg', { width: W, height: Hh, viewBox: '0 0 ' + W + ' ' + Hh, role: 'img', 'aria-label': label }); }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function erf(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return s * y; }
+const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
+const npdf = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) * ((x - m) / s)) / (s * Math.sqrt(2 * Math.PI));
+function pct(p) {
+  if (p >= 1) return '100%';
+  if (p <= 0) return '0%';
+  if (p > 0.999) return (p * 100).toFixed(2) + '%';
+  if (p > 0.99) return (p * 100).toFixed(1) + '%';
+  if (p < 0.01) return (p * 100).toFixed(1) + '%';
+  return Math.round(p * 100) + '%';
+}
+const num = v => v.toLocaleString('en-US');
+function svgPoint(svg, ev, W) { const r = svg.getBoundingClientRect(); return { x: (ev.clientX - r.left) * (W / r.width), y: (ev.clientY - r.top) * (W / r.width) }; }
+
+/* tooltip */
+const tip = $('#tip');
+function tipShow(title, rows, cx, cy) {
+  tip.replaceChildren();
+  if (title) H('div', { class: 'tip-t' }, tip, title);
+  rows.forEach(r => { const d = H('div', { class: 'tip-r' }, tip); if (r.key) H('span', { class: 'tip-k ' + r.key }, d); H('b', null, d, r.v); if (r.l) H('span', null, d, r.l); });
+  tip.hidden = false;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = cx + 14, y = cy + 14;
+  if (x + tw > window.innerWidth - 8) x = cx - tw - 14;
+  if (y + th > window.innerHeight - 8) y = cy - th - 14;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+function tipHide() { tip.hidden = true; }
+window.addEventListener('scroll', tipHide, { passive: true });
+
+/* render at the container's real width so text stays at true size */
+function responsive(el, render) {
+  let last = 0;
+  const go = force => { const w = Math.floor(el.getBoundingClientRect().width); if (w > 0 && (force || w !== last)) { last = w; render(w); } };
+  if ('ResizeObserver' in window) new ResizeObserver(() => go(false)).observe(el);
+  else window.addEventListener('resize', () => go(false));
+  go(true);
+  return () => go(true);
+}
+function statusIcon(kind) {
+  const s = S('svg', { viewBox: '0 0 14 14', 'aria-hidden': 'true' });
+  S('circle', { cx: 7, cy: 7, r: 6.2, fill: 'currentColor', opacity: '.18' }, s);
+  if (kind === 'good') S('path', { d: 'M4 7.2L6.1 9.3L10 4.9', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, s);
+  else if (kind === 'warn') { S('path', { d: 'M7 3.6V7.8', stroke: 'currentColor', 'stroke-width': 1.7, 'stroke-linecap': 'round' }, s); S('circle', { cx: 7, cy: 10.2, r: 1, fill: 'currentColor' }, s); }
+  else S('path', { d: 'M4.6 4.6L9.4 9.4M9.4 4.6L4.6 9.4', stroke: 'currentColor', 'stroke-width': 1.7, 'stroke-linecap': 'round' }, s);
+  return s;
+}
+function setStatus(el, kind, label) { el.className = 'status ' + kind; el.replaceChildren(statusIcon(kind), doc.createTextNode(label)); }
+
+/* ---------- shared models ---------- */
+const MIX = [
+  { w: 0.25, m: 0.30, s: 0.06, label: 'oily / wet' },
+  { w: 0.30, m: 0.52, s: 0.06, label: 'dusty' },
+  { w: 0.45, m: 0.78, s: 0.07, label: 'clean, dry' }
+];
+const muPdf = x => MIX.reduce((a, c) => a + c.w * npdf(x, c.m, c.s), 0);
+const muCdf = x => MIX.reduce((a, c) => a + c.w * Phi((x - c.m) / c.s), 0);
+function sampleMu(r) { const u = r(); let acc = 0; for (const c of MIX) { acc += c.w; if (u <= acc) return c.m + c.s * gauss(r); } return MIX[2].m; }
+
+const TASKS = [
+  { id: 'pallet', label: 'Box on a pallet', tol: 15, note: 'Box on a pallet: a suction cup or wide jaws absorb ±15 mm.' },
+  { id: 'tote', label: 'Part from a mixed tote', tol: 4, note: 'Part from a mixed tote: parallel jaws with about 4 mm of clearance each side.' },
+  { id: 'pin', label: 'Pin into a chamfered hole', tol: 1.0, note: 'Pin into a hole: the chamfer captures the pin within ±1 mm.' },
+  { id: 'conn', label: 'Connector mating', tol: 0.4, note: 'Connector mating: a small lead-in, stiff parts, ±0.4 mm.' }
+];
+const SOURCES = [
+  { id: 'kin', kind: 'bias', label: 'Arm kinematic accuracy', sigma: 0.8, def: 0.8, max: 4, help: 'Uncalibrated arms are commonly off by a millimetre or more, varying across the workspace.' },
+  { id: 'cal', kind: 'bias', label: 'Camera-to-arm calibration', sigma: 2.0, def: 2.0, max: 6, help: 'Hand–eye residual. 0.1° of rotation error alone is 1.7 mm at a metre.' },
+  { id: 'therm', kind: 'bias', label: 'Deflection and thermal drift', sigma: 0.5, def: 0.5, max: 3, help: 'Sag under payload; expansion over a shift.' },
+  { id: 'rep', kind: 'random', label: 'Arm repeatability', sigma: 0.03, def: 0.03, fixed: true, help: 'The datasheet number. UR5e: ±0.03 mm per ISO 9283.' },
+  { id: 'per', kind: 'random', label: 'Depth and pose estimation', sigma: 2.0, def: 2.0, max: 6, help: 'Sensor noise plus model error on this part, in this light.' },
+  { id: 'part', kind: 'random', label: 'Part versus its model', sigma: 1.0, def: 1.0, max: 4, help: 'Tolerances, deformation, a variant nobody listed.' },
+  { id: 'slip', kind: 'random', label: 'Slip in the grasp', sigma: 1.0, def: 1.0, max: 4, help: 'The part shifts in the fingers between pick and place.' }
+];
+function budget() {
+  let vr = 0, vb = 0;
+  SOURCES.forEach(s => { const v = s.sigma * s.sigma; if (s.kind === 'random') vr += v; else vb += v; });
+  return { sr: Math.sqrt(vr), sb: Math.sqrt(vb), st: Math.sqrt(vr + vb) };
+}
+function pInside(T, b, s) { if (s < 1e-9) return Math.abs(b) <= T ? 1 : 0; return Phi((T - b) / s) - Phi((-T - b) / s); }
+
+/* =========================================================
+   Fig 1 · the same pick, 60 times
+   ========================================================= */
+safe('hero', function hero() {
+  const PX = 5, CX = 200, GROUND = 204, PW = 64, PH = 36, WIN_Y = 158, START_Y = 50, STRIP_Y = 234, VH = 292, TOL = 4, N = 60;
+  const CELLS = ['B3', 'A1', 'C2', 'B1', 'A4', 'C4', 'A2', 'B4', 'C1', 'A3', 'B2', 'C3'];
+  const b0 = budget();
+  const SR = b0.sr, SB = b0.sb;
+  let bias = 1.6, cellIdx = 0, runSeed = 3;
+  const cellRng = mulberry32(2024);
+
+  function attempts() {
+    const r = mulberry32((runSeed * 7919 + cellIdx * 104729 + 17) >>> 0);
+    const out = [];
+    for (let i = 0; i < N; i++) {
+      const e = bias + SR * gauss(r);
+      const mu = sampleMu(r);
+      out.push({ e: e, res: Math.abs(e) > TOL ? 'miss' : (mu < 0.25 ? 'slip' : 'held'), w1: gauss(r), w2: gauss(r) });
+    }
+    return out;
+  }
+  function base(svg, real) {
+    svg.replaceChildren();
+    if (real) {
+      const defs = S('defs', null, svg);
+      const pat = S('pattern', { id: 'hp-hatch', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+      S('line', { x1: 0, y1: 0, x2: 0, y2: 5, class: 'hatch' }, pat);
+    }
+    const g = S('g', null, svg);
+    if (real) {
+      S('rect', { x: 8, y: GROUND, width: 384, height: 11, fill: 'url(#hp-hatch)' }, g);
+      [[52, 201.5, 4, 2.6], [76, 202.6, 2.4, 1.4], [118, 202, 3, 2], [288, 201.4, 4.6, 2.7], [322, 202.6, 2.6, 1.4], [354, 201.2, 3.6, 2.5]].forEach(p => S('ellipse', { cx: p[0], cy: p[1], rx: p[2], ry: p[3], class: 'pebble' }, g));
+    } else {
+      for (let x = 20; x <= 380; x += 20) S('line', { x1: x, y1: GROUND, x2: x, y2: GROUND + 9, class: 'simgrid' }, g);
+    }
+    S('line', { x1: 8, y1: GROUND, x2: 392, y2: GROUND, class: 'floor' }, g);
+    S('rect', { x: CX - PW / 2, y: GROUND - PH, width: PW, height: PH, rx: 2, class: 'part' }, g);
+    const xl = CX - TOL * PX, xr = CX + TOL * PX;
+    S('path', { d: 'M' + xl + ',' + (WIN_Y - 6) + 'V' + WIN_Y + 'H' + xr + 'V' + (WIN_Y - 6), class: 'bracket' }, g);
+    tx(g, xl - 8, WIN_Y + 1, '±4 mm window', null, 'end');
+    S('line', { x1: xl, y1: GROUND + 18, x2: xl, y2: VH - 4, class: 'guide' }, g);
+    S('line', { x1: xr, y1: GROUND + 18, x2: xr, y2: VH - 4, class: 'guide' }, g);
+    tx(g, 12, STRIP_Y + 4, 'landings');
+    S('line', { x1: CX, y1: 6, x2: CX, y2: 22, class: 'grip-line' }, g);
+    S('rect', { x: CX - 19, y: 22, width: 38, height: 7, rx: 1.5, class: 'grip' }, g);
+    S('rect', { x: CX - 18, y: 29, width: 5, height: 16, rx: 1, class: 'grip' }, g);
+    S('rect', { x: CX + 13, y: 29, width: 5, height: 16, rx: 1, class: 'grip' }, g);
+    return g;
+  }
+  function trajPath(a) {
+    const x1 = CX + a.e * PX, y0 = START_Y, y1 = WIN_Y + 4;
+    let d = '';
+    for (let i = 0; i <= 12; i++) {
+      const f = i / 12, s = f * f * (3 - 2 * f);
+      const x = CX + (x1 - CX) * s + Math.sin(Math.PI * f) * a.w1 * 2.6 + Math.sin(2 * Math.PI * f) * a.w2 * 1.2;
+      d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + (y0 + (y1 - y0) * f).toFixed(1);
+    }
+    return d;
+  }
+  function drawSim() {
+    const g = base($('#h-sim'), false);
+    S('path', { d: 'M' + CX + ',' + START_Y + 'V' + (WIN_Y + 4), class: 'traj-sim' }, g);
+    S('circle', { cx: CX, cy: STRIP_Y, r: 3.4, class: 'm-held-sim' }, g);
+    tx(g, CX + TOL * PX + 8, STRIP_Y + 4, '×60, identical');
+  }
+  function drawReal(animate) {
+    const g = base($('#h-real'), true);
+    const ex = CX + bias * PX;
+    S('rect', { x: ex - PW / 2, y: GROUND - PH, width: PW, height: PH, rx: 2, class: 'estimate' }, g);
+    const lx = Math.max(ex, CX) + PW / 2 + 7;
+    tx(g, lx, GROUND - PH + 13, 'camera’s estimate');
+    tx(g, lx, GROUND - PH + 26, (bias >= 0 ? '+' : '−') + Math.abs(bias).toFixed(1) + ' mm off');
+    const A = attempts();
+    const trajG = S('g', null, g), markG = S('g', null, g);
+    const BIN = 4.6, ROW = 5.3, counts = {}, marks = [];
+    A.map((a, i) => ({ e: a.e, i: i })).sort((p, q) => p.e - q.e).forEach(a => {
+      const b = Math.round(a.e * PX / BIN);
+      const k = counts[b] = (counts[b] || 0) + 1;
+      marks[a.i] = { x: CX + b * BIN, y: STRIP_Y + Math.min(k - 1, 10) * ROW };
+    });
+    const els = [];
+    A.forEach((a, i) => {
+      const p = S('path', { d: trajPath(a), class: 'traj-real' }, trajG);
+      const m = marks[i];
+      let me;
+      if (a.res === 'miss') me = S('path', { d: 'M' + (m.x - 2.6) + ',' + (m.y - 2.6) + 'L' + (m.x + 2.6) + ',' + (m.y + 2.6) + 'M' + (m.x - 2.6) + ',' + (m.y + 2.6) + 'L' + (m.x + 2.6) + ',' + (m.y - 2.6), class: 'm-miss' }, markG);
+      else me = S('circle', { cx: m.x, cy: m.y, r: 2.3, class: a.res === 'held' ? 'm-held' : 'm-slip' }, markG);
+      els.push([p, me]);
+    });
+    const held = A.filter(a => a.res === 'held').length, miss = A.filter(a => a.res === 'miss').length, slip = N - held - miss;
+    $('#h-tally-real').textContent = held + ' of ' + N + ' held · ' + miss + ' missed · ' + slip + ' slipped';
+    $('#h-cell').textContent = CELLS[cellIdx];
+    if (animate && !RM) {
+      els.forEach(pair => { pair[0].style.opacity = 0; pair[1].style.opacity = 0; });
+      els.forEach((pair, i) => setTimeout(() => { pair[0].style.opacity = ''; pair[1].style.opacity = ''; }, 16 * i));
+    }
+  }
+  drawSim();
+  drawReal(false);
+  $('#h-run').addEventListener('click', () => { runSeed++; drawReal(true); });
+  $('#h-next').addEventListener('click', () => { cellIdx = (cellIdx + 1) % CELLS.length; bias = Math.round(SB * gauss(cellRng) * 10) / 10; runSeed++; drawReal(true); });
+});
+
+/* =========================================================
+   Fig 2 · coverage
+   ========================================================= */
+safe('coverage', function coverage() {
+  const st = { c: 0.80, w: 0.10, a: false };
+  const PRESETS = { datasheet: { c: 0.80, w: 0.10, a: false }, sysid: { c: 0.58, w: 0.10, a: false }, wide: { c: 0.60, w: 1.00, a: false }, adapt: { c: 0.60, w: 1.00, a: true } };
+  const sig = z => 1 / (1 + Math.exp(-z));
+  const plateau = (w, a) => a ? 0.98 - 0.06 * w : 0.98 - 0.22 * w;
+  const margin = a => a ? 0.10 : 0.05;
+  function comp(mu, c, w, a) { const lo = c - w / 2, hi = c + w / 2, m = margin(a), s = 0.022; return plateau(w, a) * sig((mu - lo + m) / s) * sig((hi + m - mu) / s); }
+  function expect(c, w, a) { let acc = 0; const dx = 0.004; for (let x = -0.1; x <= 1.5; x += dx) acc += muPdf(x) * comp(x, c, w, a) * dx; return acc; }
+  const XS = Array.from({ length: 241 }, (_, i) => i * 0.005);
+  const DENS = XS.map(muPdf);
+  const DMAX = Math.max.apply(null, DENS);
+  const mainEl = $('#cov-main'), miniEl = $('#cov-mini');
+
+  function renderMain(W) {
+    const big = W > 600;
+    const ml = 46, mr = 14, t1 = 28, h1 = big ? 122 : 84, t2 = t1 + h1 + 36, h2 = big ? 150 : 104, b2 = t2 + h2, Hh = b2 + 48;
+    const svg = svgEl(W, Hh, 'Top: distribution of friction across site conditions. Bottom: success of the trained policy across friction values, with the training range shaded.');
+    const x = mu => ml + (mu / 1.2) * (W - ml - mr);
+    const lo = clamp(st.c - st.w / 2, 0, 1.2), hi = clamp(st.c + st.w / 2, 0, 1.2);
+    S('rect', { x: x(lo), y: t1 - 10, width: Math.max(2, x(hi) - x(lo)), height: b2 - t1 + 10, class: 'band-sim' }, svg);
+    tx(svg, ml, 12, 'WHERE THE SITE IS', 'hdr');
+    tx(svg, ml, t2 - 14, 'WHERE THE POLICY SUCCEEDS', 'hdr');
+    const yd = d => t1 + h1 - d / DMAX * (h1 - 4);
+    let dA = 'M' + x(0) + ',' + (t1 + h1), dL = '';
+    XS.forEach((m, i) => { const px = x(m).toFixed(1), py = yd(DENS[i]).toFixed(1); dA += 'L' + px + ',' + py; dL += (i ? 'L' : 'M') + px + ',' + py; });
+    dA += 'L' + x(1.2) + ',' + (t1 + h1) + 'Z';
+    S('path', { d: dA, class: 'a-real' }, svg);
+    S('path', { d: dL, class: 'l-real' }, svg);
+    S('line', { x1: ml, x2: W - mr, y1: t1 + h1, y2: t1 + h1, class: 'axis' }, svg);
+    if (W > 420) MIX.forEach(c => tx(svg, x(c.m), yd(muPdf(c.m)) - 7, c.label, 'ink2', 'middle'));
+    [0, 0.5, 1].forEach(v => { const yy = b2 - v * h2; S('line', { x1: ml, x2: W - mr, y1: yy, y2: yy, class: v ? 'grid' : 'axis' }, svg); tx(svg, ml - 6, yy + 4, pct(v), null, 'end'); });
+    let dS = '';
+    XS.forEach((m, i) => { dS += (i ? 'L' : 'M') + x(m).toFixed(1) + ',' + (b2 - comp(m, st.c, st.w, st.a) * h2).toFixed(1); });
+    S('path', { d: dS, class: 'l-sim' }, svg);
+    tx(svg, x(st.c), b2 - 8, st.w < 0.03 ? 'training value' : 'training range', 'ink2', 'middle');
+    for (let i = 0; i <= 6; i++) { const v = i * 0.2; if (W < 420 && i % 2) continue; tx(svg, x(v), b2 + 17, v.toFixed(1), null, 'middle'); }
+    tx(svg, (ml + W - mr) / 2, b2 + 37, 'friction coefficient μ, gripper pad on part', 'ink2', 'middle');
+    const cross = S('line', { x1: 0, x2: 0, y1: t1 - 10, y2: b2, class: 'cross', visibility: 'hidden' }, svg);
+    const hit = S('rect', { x: ml, y: t1 - 10, width: W - ml - mr, height: b2 - t1 + 10, class: 'hit' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const p = svgPoint(svg, ev, W);
+      const mu = clamp((p.x - ml) / (W - ml - mr) * 1.2, 0, 1.2);
+      cross.setAttribute('x1', x(mu)); cross.setAttribute('x2', x(mu)); cross.setAttribute('visibility', 'visible');
+      const share = muCdf(mu + 0.05) - muCdf(mu - 0.05);
+      tipShow('μ = ' + mu.toFixed(2), [{ key: 'real', v: pct(share), l: 'of site conditions within ±0.05' }, { key: 'sim', v: pct(comp(mu, st.c, st.w, st.a)), l: 'policy success here' }], ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+    mainEl.replaceChildren(svg);
+  }
+  function renderMini(W) {
+    const Hh = 180, ml = 40, mr = 16, mt = 18, mb = 38;
+    const svg = svgEl(W, Hh, 'Expected success on site as the training range widens');
+    const x = w => ml + w / 1.2 * (W - ml - mr), y = v => mt + (1 - v) * (Hh - mt - mb);
+    [0, 0.5, 1].forEach(v => { S('line', { x1: ml, x2: W - mr, y1: y(v), y2: y(v), class: v ? 'grid' : 'axis' }, svg); tx(svg, ml - 6, y(v) + 4, pct(v), null, 'end'); });
+    [0, 0.4, 0.8, 1.2].forEach(v => tx(svg, x(v), Hh - mb + 16, v.toFixed(1), null, 'middle'));
+    tx(svg, (ml + W - mr) / 2, Hh - 4, 'range width', 'ink2', 'middle');
+    const WS = Array.from({ length: 61 }, (_, i) => i * 0.02);
+    const cur = WS.map(w => expect(st.c, w, st.a)), oth = WS.map(w => expect(st.c, w, !st.a));
+    const path = arr => arr.map((v, i) => (i ? 'L' : 'M') + x(WS[i]).toFixed(1) + ',' + y(v).toFixed(1)).join('');
+    S('path', { d: path(oth), class: 'l-mute' }, svg);
+    S('path', { d: path(cur), class: 'l-real' }, svg);
+    const e = expect(st.c, st.w, st.a);
+    S('circle', { cx: x(st.w), cy: y(e), r: 5, class: 'dot-real' }, svg);
+    const lx = clamp(x(st.w), ml + 16, W - mr - 16);
+    tx(svg, lx, Math.max(12, y(e) - 10), pct(e), 'val', 'middle');
+    let bi = 0; cur.forEach((v, i) => { if (v > cur[bi]) bi = i; });
+    $('#cov-best').textContent = 'Best width at this centre: ' + WS[bi].toFixed(2) + ', expected ' + pct(cur[bi]) + ' on site.';
+    const cross = S('line', { x1: 0, x2: 0, y1: mt, y2: Hh - mb, class: 'cross', visibility: 'hidden' }, svg);
+    const hit = S('rect', { x: ml, y: mt, width: W - ml - mr, height: Hh - mt - mb, class: 'hit' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const p = svgPoint(svg, ev, W);
+      const i = clamp(Math.round((p.x - ml) / (W - ml - mr) * 60), 0, 60);
+      cross.setAttribute('x1', x(WS[i])); cross.setAttribute('x2', x(WS[i])); cross.setAttribute('visibility', 'visible');
+      tipShow('width ' + WS[i].toFixed(2), [{ key: 'real', v: pct(cur[i]), l: st.a ? 'with adaptation' : 'this policy' }, { key: 'mute', v: pct(oth[i]), l: st.a ? 'without adaptation' : 'with adaptation' }], ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+    miniEl.replaceChildren(svg);
+    $('#cov-key-cur').textContent = st.a ? 'this policy (adapts)' : 'this policy';
+    $('#cov-key-oth').textContent = st.a ? 'without adaptation' : 'with adaptation';
+  }
+  const rMain = responsive(mainEl, renderMain), rMini = responsive(miniEl, renderMini);
+  function update() {
+    $('#cov-c').value = st.c; $('#cov-w').value = st.w; $('#cov-a').checked = st.a;
+    $('#cov-c-o').textContent = st.c.toFixed(2);
+    $('#cov-w-o').textContent = st.w.toFixed(2);
+    const m = margin(st.a);
+    const covered = clamp(muCdf(st.c + st.w / 2 + m) - muCdf(st.c - st.w / 2 - m), 0, 1);
+    $('#cov-cov').textContent = pct(covered);
+    $('#cov-h').textContent = pct(plateau(st.w, st.a));
+    $('#cov-exp').textContent = pct(expect(st.c, st.w, st.a));
+    $$('#cov-presets button').forEach(b => { const p = PRESETS[b.dataset.p]; b.setAttribute('aria-pressed', String(Math.abs(p.c - st.c) < 0.005 && Math.abs(p.w - st.w) < 0.005 && p.a === st.a)); });
+    rMain(); rMini();
+  }
+  $$('#cov-presets button').forEach(b => b.addEventListener('click', () => { const p = PRESETS[b.dataset.p]; st.c = p.c; st.w = p.w; st.a = p.a; update(); }));
+  $('#cov-c').addEventListener('input', e => { st.c = +e.target.value; update(); });
+  $('#cov-w').addEventListener('input', e => { st.w = +e.target.value; update(); });
+  $('#cov-a').addEventListener('change', e => { st.a = e.target.checked; update(); });
+  update();
+});
+
+/* dimensionality calculator */
+safe('dims', function dims() {
+  const k = $('#dc-k'), c = $('#dc-c');
+  function upd() {
+    const kv = +k.value, cv = +c.value / 100;
+    $('#dc-k-o').textContent = kv; $('#dc-k-o2').textContent = kv;
+    $('#dc-c-o').textContent = (+c.value).toFixed(1).replace(/\.0$/, '') + '%';
+    $('#dc-c-o2').textContent = (+c.value).toFixed(1).replace(/\.0$/, '') + '%';
+    $('#dc-r').textContent = pct(Math.pow(cv, kv));
+  }
+  k.addEventListener('input', upd); c.addEventListener('input', upd); upd();
+});
+
+/* =========================================================
+   Fig 3 · anatomy of the gap
+   ========================================================= */
+safe('anatomy', function anatomy() {
+  const NODES = {
+    world: { title: 'World', sub: 'physics: contact, mass, terrain' },
+    sensors: { title: 'Sensors', sub: 'cameras, depth, IMU, encoders' },
+    perception: { title: 'Perception', sub: 'measurements → state estimate' },
+    policy: { title: 'Policy', sub: 'identical code in both worlds' },
+    actuation: { title: 'Actuation', sub: 'drives, motors, gearboxes' }
+  };
+  const TIERS = {
+    solid: { label: 'Solid by default', bars: 4 },
+    approx: { label: 'Approximate by default', bars: 2 },
+    absent: { label: 'Absent unless you add it', bars: 1 },
+    hard: { label: 'Hard to model at all', bars: 0 },
+    simonly: { label: 'Exists only in simulation', bars: -1 }
+  };
+  const GAPS = [
+    { id: 'contact', node: 'world', tier: 'approx', name: 'Contact & friction',
+      assumes: 'Rigid bodies touching at a few points, with one friction coefficient per pair of surfaces. MuJoCo, for example, gives every surface a sliding friction of 1.0 unless you change it. Contact forces come from a solver, and its stiffness, time step and iteration count change the answer.',
+      reality: 'Friction shifts with dust, oil, moisture, load, speed and wear, and static friction exceeds sliding friction. Contact happens over deforming patches, and tiny differences in geometry flip outcomes: a part settles on its edge instead of its face.',
+      symptom: 'Grasps that slip, pushed parts that rotate the wrong way, insertions that jam, wheels and feet that skid.',
+      fixes: 'Randomize friction, restitution and contact stiffness. Use compliance: force or impedance control, soft fingertips, chamfers. Add tactile or force sensing. Fine-tune on real contact data.',
+      note: { text: 'Peng et al. 2018: training without puck-friction randomization cut real-robot success on their pushing task from 0.89 to 0.48.', cite: 'arXiv:1710.06537', url: 'https://arxiv.org/abs/1710.06537' } },
+    { id: 'deform', node: 'world', tier: 'hard', name: 'Deformables, soil & rubble',
+      assumes: 'A rigid world. Deformable and granular solvers exist (finite elements, position-based dynamics, the material point method), but they are slow, need parameters nobody has measured, and rarely run inside fast training loops.',
+      reality: 'Cables, hoses, tarps, bags, soil, gravel, rubble and mud: material that compacts, flows, tears and shifts under load.',
+      symptom: 'Wheels that sink, piles that collapse when one item is pulled, cables that snag, bags that change shape mid-grasp.',
+      fixes: 'Estimate terrain from the robot’s own feel (proprioception), keep conservative traversability margins, learn models from logged interactions, and prefer grasps that tolerate shape change.',
+      note: { text: 'Spirit rover, 2009: it broke through a crust into loose soil at a site called Troy. JPL rebuilt the scene with a test rover in about 2.7 tonnes of diatomaceous earth and clay, and revised the mix when early tests behaved differently from the Mars soil. Spirit never drove free; NASA designated it a stationary platform in January 2010.', cite: 'NASA/JPL PIA12145', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA12145' } },
+    { id: 'geometry', node: 'world', tier: 'absent', name: 'Mass, shape & part variation',
+      assumes: 'The CAD model. Every part identical, every link exactly its nominal mass and length.',
+      reality: 'Cables and fasteners shift centres of mass. Parts vary within tolerance, and castings, timber, rebar and reclaimed material vary far beyond it. Links bend under load.',
+      symptom: 'Tracking error, parts that won’t seat, grasps planned on a model of a part that isn’t the one in front of the robot.',
+      fixes: 'Measure masses and inertias (system identification), randomize dimensions and masses, perceive the actual part instead of trusting CAD, estimate payload online.',
+      note: { text: 'Peng et al. 2018: training without link-mass randomization cut real-robot success from 0.89 to 0.64.', cite: 'arXiv:1710.06537', url: 'https://arxiv.org/abs/1710.06537' } },
+    { id: 'artifacts', node: 'world', tier: 'simonly', name: 'Simulator artifacts',
+      assumes: 'The solver’s numerical shortcuts are part of the world the policy trains in: small interpenetrations, contact jitter, collision rules that let a body slide along a wall.',
+      reality: 'None of those shortcuts exist. A physical robot cannot use them.',
+      symptom: 'Behaviour that scores well in simulation and is impossible on hardware: vibrating to creep forward, wedging objects through each other, chattering faster than motors can follow.',
+      fixes: 'Penalize action rate, torque and power. Test in a second simulator before hardware. Match collision behaviour to reality and use smaller time steps.',
+      note: { text: 'Kadian et al. 2020: navigation agents learned to slide along walls on collision, a shortcut no real robot has. Simulated rankings of nine models correlated with real rankings at 0.18; after tuning the simulator, 0.844.', cite: 'arXiv:1912.06321', url: 'https://arxiv.org/abs/1912.06321' } },
+    { id: 'sensors', node: 'sensors', tier: 'absent', name: 'Noise, bias & dropouts',
+      assumes: 'Exact joint angles, clean images, depth with no holes, every message delivered.',
+      reality: 'IMU bias drifts, encoders quantize, depth cameras return holes on shiny, dark or transparent surfaces, strong sunlight washes out projected infrared patterns, lidar returns off dust and rain, and cables drop frames.',
+      symptom: 'Perception that works in the lab and fails outdoors at noon; state estimates that wander.',
+      fixes: 'Inject realistic noise, dropouts and artifacts in simulation. Train on real sensor data. Run health checks that flag a degraded sensor before it causes a failure.',
+      note: { text: 'Peng et al. 2018: training without observation noise cut real-robot success from 0.89 to 0.25, the largest single drop in their study.', cite: 'arXiv:1710.06537', url: 'https://arxiv.org/abs/1710.06537' } },
+    { id: 'calib', node: 'sensors', tier: 'absent', name: 'Calibration',
+      assumes: 'The camera sits exactly where the model says, relative to the arm.',
+      reality: 'Hand–eye calibration leaves a residual, mounts get knocked, and temperature moves them. Angles matter most: 0.2° of rotation error puts the gripper 3.5 mm off at a metre.',
+      symptom: 'The same miss in the same direction, attempt after attempt, on one cell and not its neighbour.',
+      fixes: 'Calibrate against fiducials at every start or shift, verify with a check pose, and correct in closed loop with visual servoing or touch-off. See Fig. 4 and Fig. 9.',
+      note: null },
+    { id: 'appearance', node: 'perception', tier: 'approx', name: 'Appearance',
+      assumes: 'Rendered images: clean textures, controlled lighting, no lens dirt.',
+      reality: 'Low sun, hard shadows, glare off steel, dust, rain, shrink-wrap, textures nobody modelled, a lens nobody wiped.',
+      symptom: 'Detection that fails at certain times of day; confident, wrong pose estimates.',
+      fixes: 'Visual domain randomization, photoreal or neural rendering, scans of the real site, pretrained vision models, real images mixed into training, and depth or geometry inputs instead of raw colour.',
+      note: { text: 'Tobin et al. 2017: a detector trained only on simulated images with deliberately unrealistic random textures located real objects to 1.5 cm on average. On simulated test images it reached 0.3 to 0.5 cm, so some gap remained.', cite: 'arXiv:1703.06907', url: 'https://arxiv.org/abs/1703.06907' } },
+    { id: 'hidden', node: 'policy', tier: 'simonly', name: 'Hidden state',
+      assumes: 'During training, anything in memory is available: true poses, contact forces, friction, terrain height.',
+      reality: 'The deployed robot has only its sensors. Contact forces, friction and mass have to be inferred.',
+      symptom: 'Policies that lean on information they will never get.',
+      fixes: 'Teacher–student training, where a teacher with privileged state trains a student that sees only onboard sensors. Asymmetric actor–critic. Estimating hidden parameters from recent history.',
+      note: { text: 'Lee et al. 2020: the ANYmal teacher policy saw contact states, contact forces and the terrain profile. The deployed student saw only IMU and joint readings and inferred the rest from their history.', cite: 'arXiv:2010.11251', url: 'https://arxiv.org/abs/2010.11251' } },
+    { id: 'actuators', node: 'actuation', tier: 'absent', name: 'Motors, gearboxes & drives',
+      assumes: 'Each joint produces the torque it is asked for, instantly, at any speed, with the controller gains written in the model.',
+      reality: 'Available torque falls with speed, drives limit current, motors derate as they heat, gearboxes add backlash, friction and compliance, and battery voltage sags under load. Firmware gains differ from the model’s.',
+      symptom: 'Commands that saturate, policies that chatter, joints that overheat after twenty minutes, behaviour that changes as the battery drains.',
+      fixes: 'Model torque–speed limits and drive behaviour, learn an actuator model from real logs, penalize jerky actions, monitor temperature and voltage.',
+      note: { text: 'Hwangbo et al. 2019: ANYmal’s series-elastic actuators were too hard to model analytically, so the team trained an actuator network on real data and put it inside the simulator. Policies trained with it transferred to the robot.', cite: 'arXiv:1901.08652', url: 'https://arxiv.org/abs/1901.08652' } },
+    { id: 'latency', node: 'loop', tier: 'absent', name: 'Latency & sync',
+      assumes: 'Observe, act and step the physics in lockstep, with zero delay.',
+      reality: 'Exposure, readout, transfer, inference and bus traffic add tens of milliseconds, and the delay varies. Sensors run at different rates on different clocks.',
+      symptom: 'Overshoot and oscillation that grow with speed; a controller that only works when slowed down.',
+      fixes: 'Measure the delay and simulate it with jitter, give the policy its recent actions, timestamp everything, run fast loops on real-time hardware. See Fig. 5.',
+      note: { text: 'Tan et al. 2018: in the Bullet simulator, motor commands took effect instantly. On the Minitaur robot the servo added about 3 ms and the locomotion controller about 15 to 19 ms, so the team measured those delays and simulated them.', cite: 'arXiv:1804.10332', url: 'https://arxiv.org/abs/1804.10332' } },
+    { id: 'open', node: 'loop', tier: 'hard', name: 'The open world',
+      assumes: 'The scenes and objects someone authored or generated, and episodes that reset.',
+      reality: 'New part types and packaging, people walking through, weather, a layout that changed overnight, things nobody listed. Nothing resets.',
+      symptom: 'Long-tail failures that no test covered.',
+      fixes: 'Procedural generation, scans of real sites, fleet data that feeds failures back into simulation, and fallbacks that escalate to a person. See Fig. 12.',
+      note: null },
+    { id: 'drift', node: 'loop', tier: 'absent', name: 'Drift & wear',
+      assumes: 'Day one, forever.',
+      reality: 'Gripper pads wear, gearboxes loosen, cameras shift, lenses collect dust, temperature changes friction and calibration, and firmware updates change behaviour.',
+      symptom: 'Success that slowly decays, then jumps back after maintenance.',
+      fixes: 'Periodic recalibration, wear monitoring, success tracked per unit over time, maintenance triggered by metrics instead of the calendar. See Fig. 10.',
+      note: { text: 'Curiosity rover: from October 2013 its wheels were damaged faster than expected on sharp terrain. JPL developed traction-control software, uploaded in 2017, that cut wheel loads by up to 20% in testing, and drivers now plan routes that are easier on the wheels.', cite: 'NASA/JPL', url: 'https://www.jpl.nasa.gov/news/an-algorithm-helps-protect-mars-curiositys-wheels/' } }
+  ];
+  const byId = {}; GAPS.forEach(g => { byId[g.id] = g; });
+  let selected = 'contact';
+
+  function meter(tier) {
+    const t = TIERS[tier];
+    if (t.bars < 0) return H('span', { class: 'so', 'aria-hidden': 'true' }, null, 'SIM');
+    const m = H('span', { class: 'meter', 'aria-hidden': 'true' });
+    for (let i = 0; i < 4; i++) H('i', { class: i < t.bars ? 'on' : '' }, m);
+    return m;
+  }
+  function chip(g) {
+    const b = H('button', { class: 'chip', type: 'button', 'data-gap': g.id, 'aria-pressed': 'false', title: TIERS[g.tier].label });
+    b.appendChild(meter(g.tier));
+    H('span', null, b, g.name);
+    b.addEventListener('click', () => select(g.id));
+    return b;
+  }
+  const grid = $('#loop-grid');
+  ['world', 'sensors', 'perception', 'policy', 'actuation'].forEach(id => {
+    const n = H('div', { class: 'node', 'data-node': id }, grid);
+    H('p', { class: 'node-title' }, n, NODES[id].title);
+    H('p', { class: 'node-sub' }, n, NODES[id].sub);
+    const list = H('div', { class: 'chips' }, n);
+    GAPS.filter(g => g.node === id).forEach(g => list.appendChild(chip(g)));
+  });
+  const frame = $('#frame-chips');
+  GAPS.filter(g => g.node === 'loop').forEach(g => frame.appendChild(chip(g)));
+
+  const ladder = $('#ladder');
+  ['solid', 'approx', 'absent', 'hard', 'simonly'].forEach(tid => {
+    const r = H('div', { class: 'rung' }, ladder);
+    const h = H('h4', null, r); h.appendChild(meter(tid)); h.appendChild(doc.createTextNode(TIERS[tid].label));
+    if (tid === 'solid') { H('p', null, r, 'Rigid-body motion, kinematics, collision detection, gravity and inertia. Given correct masses and shapes, simulators get these right.'); return; }
+    const list = H('div', { class: 'chips' }, r);
+    GAPS.filter(g => g.tier === tid).forEach(g => list.appendChild(chip(g)));
+  });
+
+  function row(dl, label, text, key) {
+    const dt = H('dt', null, dl);
+    if (key) H('i', { class: 'sw sw-' + key }, dt);
+    dt.appendChild(doc.createTextNode(label));
+    H('dd', null, dl, text);
+  }
+  function select(id) {
+    selected = id;
+    $$('.chip[data-gap]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gap === id)));
+    const g = byId[id], d = $('#gap-detail');
+    d.replaceChildren();
+    H('p', { class: 'gd-where' }, d, g.node === 'loop' ? 'Around the whole loop' : 'Lives in: ' + NODES[g.node].title);
+    H('h3', { class: 'gd-title' }, d, g.name);
+    const t = H('p', { class: 'gd-tier' }, d); t.appendChild(meter(g.tier)); t.appendChild(doc.createTextNode(TIERS[g.tier].label));
+    const dl = H('dl', { class: 'gd-rows' }, d);
+    row(dl, 'The simulator assumes', g.assumes, 'sim');
+    row(dl, 'Reality does', g.reality, 'real');
+    row(dl, 'On site you see', g.symptom);
+    row(dl, 'Teams respond with', g.fixes);
+    if (g.note) {
+      const n = H('div', { class: 'gd-note' }, d);
+      H('p', { class: 'note-l', style: 'font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)' }, n, 'Field note');
+      H('p', null, n, g.note.text);
+      H('a', { href: g.note.url, target: '_blank', rel: 'noopener' }, n, g.note.cite);
+    }
+  }
+  select(selected);
+
+  /* arrows between the boxes, recomputed from the live layout */
+  const svg = $('#loop-arrows');
+  function rel(el, gr) { const r = el.getBoundingClientRect(); return { l: r.left - gr.left, t: r.top - gr.top, r: r.right - gr.left, b: r.bottom - gr.top, w: r.width, h: r.height }; }
+  function route(A, B) {
+    const pad = 6;
+    const oy = Math.min(A.b, B.b) - Math.max(A.t, B.t);
+    const ox = Math.min(A.r, B.r) - Math.max(A.l, B.l);
+    if (oy > 24 && (B.l >= A.r - 1 || A.l >= B.r - 1)) {
+      const y = (Math.max(A.t, B.t) + Math.min(A.b, B.b)) / 2;
+      if (B.l >= A.r - 1) return { d: 'M' + (A.r + pad) + ',' + y + 'H' + (B.l - pad), lx: (A.r + B.l) / 2, ly: y - 8, an: 'middle' };
+      return { d: 'M' + (A.l - pad) + ',' + y + 'H' + (B.r + pad), lx: (A.l + B.r) / 2, ly: y - 8, an: 'middle' };
+    }
+    if (ox > 24) {
+      const down = B.t >= A.b - 1, gap = down ? B.t - A.b : A.t - B.b;
+      if (gap >= 0 && gap < 160) {
+        const x = (Math.max(A.l, B.l) + Math.min(A.r, B.r)) / 2;
+        if (down) return { d: 'M' + x + ',' + (A.b + pad) + 'V' + (B.t - pad), lx: x + 9, ly: (A.b + B.t) / 2 + 4, an: 'start' };
+        return { d: 'M' + x + ',' + (A.t - pad) + 'V' + (B.b + pad), lx: x + 9, ly: (A.t + B.b) / 2 + 4, an: 'start' };
+      }
+    }
+    const xr = Math.max(A.r, B.r) + 20, ya = A.t + Math.min(36, A.h / 2), yb = B.t + Math.min(36, B.h / 2);
+    return { d: 'M' + (A.r + pad) + ',' + ya + 'H' + xr + 'V' + yb + 'H' + (B.r + pad), lx: xr + 5, ly: (ya + yb) / 2, an: 'start' };
+  }
+  function drawArrows() {
+    const gr = grid.getBoundingClientRect();
+    if (!gr.width) return;
+    svg.setAttribute('width', gr.width); svg.setAttribute('height', gr.height);
+    svg.setAttribute('viewBox', '0 0 ' + gr.width + ' ' + gr.height);
+    svg.replaceChildren();
+    const defs = S('defs', null, svg);
+    const mk = S('marker', { id: 'loop-ah', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+    S('path', { d: 'M0,0L10,5L0,10z', class: 'ah' }, mk);
+    const R = id => rel(grid.querySelector('[data-node="' + id + '"]'), gr);
+    [['world', 'sensors'], ['sensors', 'perception'], ['perception', 'policy'], ['policy', 'actuation'], ['actuation', 'world']].forEach(e => {
+      const p = route(R(e[0]), R(e[1]));
+      S('path', { d: p.d, class: 'loop-edge', 'marker-end': 'url(#loop-ah)' }, svg);
+      tx(svg, p.lx, p.ly, 'Δt', null, p.an);
+    });
+  }
+  let raf = 0;
+  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawArrows); };
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(schedule); ro.observe(grid); $$('.node', grid).forEach(n => ro.observe(n)); }
+  window.addEventListener('resize', schedule);
+  if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(schedule);
+  schedule();
+});
+
+/* =========================================================
+   Fig 4 · error budget
+   ========================================================= */
+safe('errorBudget', function errorBudget() {
+  const st = { task: 'tote' };
+  const seg = $('#eb-tasks');
+  TASKS.forEach(t => {
+    const b = H('button', { type: 'button', 'data-t': t.id, 'aria-pressed': String(t.id === st.task) }, seg);
+    H('span', null, b, t.label); H('span', { class: 'seg-sub' }, b, '±' + t.tol + ' mm window');
+    b.addEventListener('click', () => { st.task = t.id; update(); });
+  });
+  const outs = {};
+  SOURCES.forEach(s => {
+    const row = H('div', { class: 'src' }, $(s.kind === 'bias' ? '#eb-bias' : '#eb-random'));
+    const l = H('div', { class: 'src-l' }, row);
+    H('span', { class: 'src-name' }, l, s.label);
+    H('span', { class: 'src-help' }, l, s.help);
+    if (s.fixed) { H('span', { class: 'src-fixed' }, row, 'fixed by hardware'); H('output', null, row, s.sigma.toFixed(2) + ' mm'); return; }
+    const inp = H('input', { type: 'range', min: 0, max: s.max, step: 0.05, value: s.sigma, id: 'eb-' + s.id, 'aria-label': s.label + ', one standard deviation in millimetres' }, row);
+    const o = H('output', { for: 'eb-' + s.id }, row, s.sigma.toFixed(2) + ' mm');
+    outs[s.id] = { inp: inp, o: o };
+    inp.addEventListener('input', () => { s.sigma = +inp.value; o.textContent = s.sigma.toFixed(2) + ' mm'; update(); });
+  });
+  $('#eb-reset').addEventListener('click', () => {
+    SOURCES.forEach(s => { s.sigma = s.def; if (outs[s.id]) { outs[s.id].inp.value = s.def; outs[s.id].o.textContent = s.def.toFixed(2) + ' mm'; } });
+    st.task = 'tote'; update();
+  });
+  const task = () => TASKS.find(t => t.id === st.task);
+  function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p; return 10 * p; }
+  const fmtMM = v => (Math.abs(v) < 1 && v !== 0 ? v.toFixed(2) : (Math.abs(v) < 10 ? v.toFixed(1) : v.toFixed(0))).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  const distEl = $('#eb-dist');
+  function renderDist(W) {
+    const T = task().tol, b = budget();
+    const Hh = 230, ml = 16, mr = 16, mt = 34, mb = 44;
+    const R = niceMax(Math.max(2.2 * T, 3.6 * b.st, 1));
+    const svg = svgEl(W, Hh, 'Distribution of fingertip error for an average and a worst-in-ten cell, against the task window');
+    const x = v => ml + (v + R) / (2 * R) * (W - ml - mr);
+    const mw = 1.645 * b.sb;
+    const fA = v => npdf(v, 0, b.st), fW = v => npdf(v, mw, b.sr);
+    const ymax = Math.max(fA(0), fW(mw)) * 1.06;
+    const y = d => Hh - mb - d / ymax * (Hh - mb - mt);
+    S('rect', { x: x(-T), y: mt - 6, width: Math.max(1, x(T) - x(-T)), height: Hh - mb - mt + 6, class: 'win-band' }, svg);
+    const dy = mt - 16;
+    S('path', { d: 'M' + x(-T) + ',' + (dy - 5) + 'V' + (dy + 5) + 'M' + x(T) + ',' + (dy - 5) + 'V' + (dy + 5) + 'M' + x(-T) + ',' + dy + 'H' + x(T), class: 'dim' }, svg);
+    tx(svg, (x(-T) + x(T)) / 2, dy - 8, '±' + fmtMM(T) + ' mm window', 'ink', 'middle');
+    S('line', { x1: ml, x2: W - mr, y1: Hh - mb, y2: Hh - mb, class: 'axis' }, svg);
+    const n = 240, pts = [];
+    for (let i = 0; i <= n; i++) pts.push(-R + 2 * R * i / n);
+    let dA = 'M' + x(-R) + ',' + (Hh - mb), dL = '', dW = '';
+    pts.forEach((v, i) => { const px = x(v).toFixed(1); dA += 'L' + px + ',' + y(fA(v)).toFixed(1); dL += (i ? 'L' : 'M') + px + ',' + y(fA(v)).toFixed(1); dW += (i ? 'L' : 'M') + px + ',' + y(fW(v)).toFixed(1); });
+    dA += 'L' + x(R) + ',' + (Hh - mb) + 'Z';
+    S('path', { d: dA, class: 'a-real' }, svg);
+    S('path', { d: dW, class: 'l-ink' }, svg);
+    S('path', { d: dL, class: 'l-real' }, svg);
+    S('line', { x1: x(0), x2: x(0), y1: Hh - mb, y2: mt, class: 'l-sim' }, svg);
+    tx(svg, x(0) - 6, mt + 10, 'sim: always 0', 'ink2', 'end');
+    [-R, -R / 2, 0, R / 2, R].forEach(v => tx(svg, x(v), Hh - mb + 16, (v > 0 ? '+' : v < 0 ? '−' : '') + fmtMM(Math.abs(v)), null, 'middle'));
+    tx(svg, (ml + W - mr) / 2, Hh - 8, 'fingertip error along the critical axis, mm', 'ink2', 'middle');
+    const cross = S('line', { x1: 0, x2: 0, y1: mt - 6, y2: Hh - mb, class: 'cross', visibility: 'hidden' }, svg);
+    const hit = S('rect', { x: ml, y: mt - 6, width: W - ml - mr, height: Hh - mb - mt + 6, class: 'hit' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const p = svgPoint(svg, ev, W);
+      const v = clamp((p.x - ml) / (W - ml - mr) * 2 * R - R, -R, R), a = Math.abs(v);
+      cross.setAttribute('x1', x(v)); cross.setAttribute('x2', x(v)); cross.setAttribute('visibility', 'visible');
+      tipShow('landing beyond ±' + a.toFixed(1) + ' mm', [{ key: 'real', v: pct(1 - pInside(a, 0, b.st)), l: 'average cell' }, { key: 'ink', v: pct(1 - pInside(a, mw, b.sr)), l: 'worst 1 in 10 cells' }], ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+    distEl.replaceChildren(svg);
+  }
+  const rDist = responsive(distEl, renderDist);
+  function update() {
+    const t = task(), T = t.tol, b = budget();
+    $$('#eb-tasks button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.t === st.task)));
+    $('#eb-sr').textContent = b.sr.toFixed(2) + ' mm';
+    $('#eb-sb').textContent = b.sb.toFixed(2) + ' mm';
+    $('#eb-st').textContent = b.st.toFixed(2) + ' mm';
+    $('#eb-p-sim').textContent = '100%';
+    $('#eb-p-best').textContent = pct(pInside(T, 0, b.sr));
+    $('#eb-p-avg').textContent = pct(pInside(T, 0, b.st));
+    $('#eb-p-worst').textContent = pct(pInside(T, 1.645 * b.sb, b.sr));
+    const spr = 1.96 * b.st, span = Math.max(T, spr) * 1.06;
+    $('#fb-win').style.width = (T / span * 100) + '%';
+    $('#fb-spr').style.width = (spr / span * 100) + '%';
+    $('#fb-win-v').textContent = '±' + fmtMM(T) + ' mm';
+    $('#fb-spr-v').textContent = '±' + spr.toFixed(1) + ' mm';
+    $('#eb-task-note').textContent = t.note;
+    rDist();
+  }
+  update();
+});
+
+/* =========================================================
+   Fig 5 · latency
+   ========================================================= */
+safe('latency', function latency() {
+  const st = { tau: 0.06, K: 12 };
+  const TARGET = 200, VMAX = 500, DT = 0.0005, TT = 3;
+  function simulate(K, tau) {
+    const n = Math.round(TT / DT), d = Math.round(tau / DT);
+    const x = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) {
+      const j = i - d, xm = j >= 0 ? x[j] : 0;
+      x[i + 1] = x[i] + clamp(K * (TARGET - xm), -VMAX, VMAX) * DT;
+    }
+    let peak = -Infinity, last = -1;
+    for (let i = 0; i <= n; i++) { if (x[i] > peak) peak = x[i]; if (Math.abs(x[i] - TARGET) > 2) last = i; }
+    const settle = last < n - Math.round(0.3 / DT) ? (last + 1) * DT : null;
+    const pts = []; const step = Math.round(0.01 / DT);
+    for (let i = 0; i <= n; i += step) pts.push(x[i]);
+    return { raw: x, pts: pts, overshoot: Math.max(0, peak - TARGET), settle: settle };
+  }
+  let simR, siteR, playT = TT, raf = 0, rails = null, plot = null;
+  const at = (r, t) => r.raw[clamp(Math.round(t / DT), 0, r.raw.length - 1)];
+  const railsEl = $('#lat-rails'), plotEl = $('#lat-plot');
+  function renderRails(W) {
+    const Hh = 104, ml = 48, mr = 16;
+    const svg = svgEl(W, Hh, 'Arm position along a rail in the simulator and on site');
+    svg.classList.add('scene-rails');
+    const x = mm => ml + (clamp(mm, -10, 290) + 10) / 300 * (W - ml - mr);
+    [[30, 'SIM'], [74, 'SITE']].forEach(r => {
+      S('line', { x1: x(-10), x2: x(290), y1: r[0], y2: r[0], class: 'rail-line' }, svg);
+      tx(svg, 6, r[0] + 4, r[1], 'hdr');
+      S('line', { x1: x(TARGET), x2: x(TARGET), y1: r[0] - 13, y2: r[0] + 13, class: 'tgt-mark' }, svg);
+    });
+    tx(svg, x(TARGET), 10, 'part', 'ink2', 'middle');
+    tx(svg, x(0), 10, 'start', null, 'middle');
+    const simM = S('rect', { x: -5, y: 21, width: 10, height: 18, rx: 2, class: 'car-sim' }, svg);
+    const ghost = S('rect', { x: -6, y: 64, width: 12, height: 20, rx: 2, class: 'car-ghost' }, svg);
+    const siteM = S('rect', { x: -5, y: 65, width: 10, height: 18, rx: 2, class: 'car-real' }, svg);
+    const gl = tx(svg, 0, 99, 'camera’s last report', null, 'middle');
+    rails = { x: x, simM: simM, siteM: siteM, ghost: ghost, gl: gl, W: W };
+    railsEl.replaceChildren(svg);
+    setPlay(playT);
+  }
+  function renderPlot(W) {
+    const Hh = 240, ml = 46, mr = 16, mt = 12, mb = 40;
+    const svg = svgEl(W, Hh, 'Position against time for the simulator and the site');
+    let lo = 0, hi = 240;
+    siteR.pts.concat(simR.pts).forEach(v => { if (v < lo) lo = v; if (v > hi) hi = v; });
+    const step = hi - lo > 300 ? 100 : 50;
+    const y0 = Math.floor(lo / step) * step, y1 = Math.ceil((hi + 5) / step) * step;
+    const x = t => ml + t / TT * (W - ml - mr), y = v => mt + (1 - (v - y0) / (y1 - y0)) * (Hh - mt - mb);
+    for (let v = y0; v <= y1 + 0.1; v += step) { S('line', { x1: ml, x2: W - mr, y1: y(v), y2: y(v), class: v === y0 ? 'axis' : 'grid' }, svg); tx(svg, ml - 6, y(v) + 4, v + '', null, 'end'); }
+    tx(svg, 4, mt + 2, 'mm', null, 'start');
+    for (let t = 0; t <= TT + 0.001; t += 0.5) tx(svg, x(t), Hh - mb + 16, (t % 1 ? t.toFixed(1) : t.toFixed(0)) + ' s', null, 'middle');
+    tx(svg, (ml + W - mr) / 2, Hh - 6, 'time after the camera first sees the part', 'ink2', 'middle');
+    S('line', { x1: ml, x2: W - mr, y1: y(TARGET), y2: y(TARGET), class: 'target-line' }, svg);
+    const path = arr => arr.map((v, i) => (i ? 'L' : 'M') + x(i * 0.01).toFixed(1) + ',' + y(v).toFixed(1)).join('');
+    S('path', { d: path(simR.pts), class: 'l-sim' }, svg);
+    S('path', { d: path(siteR.pts), class: 'l-real' }, svg);
+    const ph = S('line', { x1: 0, x2: 0, y1: mt, y2: Hh - mb, class: 'cross' }, svg);
+    const cross = S('line', { x1: 0, x2: 0, y1: mt, y2: Hh - mb, class: 'cross', visibility: 'hidden' }, svg);
+    const hit = S('rect', { x: ml, y: mt, width: W - ml - mr, height: Hh - mt - mb, class: 'hit' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const p = svgPoint(svg, ev, W);
+      const t = clamp((p.x - ml) / (W - ml - mr) * TT, 0, TT);
+      cross.setAttribute('x1', x(t)); cross.setAttribute('x2', x(t)); cross.setAttribute('visibility', 'visible');
+      tipShow('t = ' + t.toFixed(2) + ' s', [{ key: 'sim', v: at(simR, t).toFixed(1) + ' mm', l: 'simulator' }, { key: 'real', v: at(siteR, t).toFixed(1) + ' mm', l: 'site' }, { key: 'ink', v: TARGET + ' mm', l: 'part' }], ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+    plot = { x: x, ph: ph };
+    plotEl.replaceChildren(svg);
+    setPlay(playT);
+  }
+  function setPlay(t) {
+    playT = t;
+    if (rails) {
+      const xs = rails.x(at(simR, t)), xr = rails.x(at(siteR, t)), xg = rails.x(at(siteR, Math.max(0, t - st.tau)));
+      rails.simM.setAttribute('transform', 'translate(' + xs.toFixed(1) + ',0)');
+      rails.siteM.setAttribute('transform', 'translate(' + xr.toFixed(1) + ',0)');
+      rails.ghost.setAttribute('transform', 'translate(' + xg.toFixed(1) + ',0)');
+      rails.ghost.setAttribute('visibility', st.tau > 0 ? 'visible' : 'hidden');
+      rails.gl.setAttribute('x', clamp(xg, 60, rails.W - 70).toFixed(1));
+      rails.gl.setAttribute('visibility', st.tau > 0 ? 'visible' : 'hidden');
+    }
+    if (plot) { const px = plot.x(t).toFixed(1); plot.ph.setAttribute('x1', px); plot.ph.setAttribute('x2', px); plot.ph.setAttribute('visibility', t >= TT ? 'hidden' : 'visible'); }
+  }
+  function play() {
+    cancelAnimationFrame(raf);
+    if (RM) { setPlay(TT); return; }
+    const t0 = performance.now();
+    const tick = now => { const t = Math.min(TT, (now - t0) / 1000 / 1.25); setPlay(t); if (t < TT) raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+  }
+  let rRails = null, rPlot = null;
+  function update(replay) {
+    simR = simulate(st.K, 0); siteR = simulate(st.K, st.tau);
+    $('#lat-tau').value = Math.round(st.tau * 1000); $('#lat-k').value = st.K;
+    $('#lat-tau-o').textContent = Math.round(st.tau * 1000) + ' ms';
+    $('#lat-k-o').textContent = (st.K % 1 ? st.K.toFixed(1) : st.K) + ' /s';
+    const kt = st.K * st.tau;
+    $('#lat-kt').textContent = kt.toFixed(2);
+    $('#lat-os').textContent = siteR.overshoot < 0.5 ? 'none' : siteR.overshoot.toFixed(0) + ' mm';
+    $('#lat-st').textContent = siteR.settle !== null ? siteR.settle.toFixed(2) + ' s' : 'never';
+    $('#lat-sst').textContent = simR.settle !== null ? simR.settle.toFixed(2) + ' s' : 'never';
+    const v = $('#lat-verdict');
+    if (siteR.settle !== null && siteR.overshoot < 0.5) setStatus(v, 'good', 'Settles cleanly on site');
+    else if (siteR.settle !== null) setStatus(v, 'warn', 'Overshoots on site, then settles');
+    else if (kt >= Math.PI / 2) setStatus(v, 'bad', 'Unstable on site: it hunts back and forth');
+    else setStatus(v, 'bad', 'Still ringing on site after 3 s');
+    $$('#lat-presets button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.k === st.K)));
+    if (rRails) rRails(); else rRails = responsive(railsEl, renderRails);
+    if (rPlot) rPlot(); else rPlot = responsive(plotEl, renderPlot);
+    if (replay) play(); else setPlay(playT);
+  }
+  $('#lat-tau').addEventListener('input', e => { st.tau = +e.target.value / 1000; update(true); });
+  $('#lat-k').addEventListener('input', e => { st.K = +e.target.value; update(true); });
+  $$('#lat-presets button').forEach(b => b.addEventListener('click', () => { st.K = +b.dataset.k; update(true); }));
+  $('#lat-play').addEventListener('click', play);
+  update(false);
+  if ('IntersectionObserver' in window && !RM) {
+    let done = false;
+    const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting && !done) { done = true; play(); io.disconnect(); } }); }, { threshold: 0.4 });
+    io.observe($('#fig5'));
+  }
+});
+
+/* =========================================================
+   Fig 6 · compounding
+   ========================================================= */
+safe('compound', function compound() {
+  const st = { p: 0.98, N: 30, d: 0.9, k: 1 };
+  function pStep() { const q = (1 - st.p) * st.d; let s = 0, qi = 1; for (let i = 0; i <= st.k; i++) { s += qi; qi *= q; } return st.p * s; }
+  const el = $('#cp-chart');
+  function render(W) {
+    const Hh = 250, ml = 44, mr = 18, mt = 14, mb = 40;
+    const svg = svgEl(W, Hh, 'Task success against the number of steps, for the simulator and the site with and without recovery');
+    const x = n => ml + (n - 1) / 99 * (W - ml - mr), y = v => mt + (1 - v) * (Hh - mt - mb);
+    [0, 0.25, 0.5, 0.75, 1].forEach(v => { S('line', { x1: ml, x2: W - mr, y1: y(v), y2: y(v), class: v ? 'grid' : 'axis' }, svg); tx(svg, ml - 6, y(v) + 4, pct(v), null, 'end'); });
+    [1, 25, 50, 75, 100].forEach(n => tx(svg, x(n), Hh - mb + 16, n + '', null, 'middle'));
+    tx(svg, (ml + W - mr) / 2, Hh - 6, 'steps in the task', 'ink2', 'middle');
+    const ps = pStep();
+    const line = f => { let d = ''; for (let n = 1; n <= 100; n++) d += (n > 1 ? 'L' : 'M') + x(n).toFixed(1) + ',' + y(f(n)).toFixed(1); return d; };
+    S('path', { d: line(() => 1), class: 'l-sim' }, svg);
+    S('path', { d: line(n => Math.pow(st.p, n)), class: 'l-mute' }, svg);
+    S('path', { d: line(n => Math.pow(ps, n)), class: 'l-real' }, svg);
+    S('line', { x1: x(st.N), x2: x(st.N), y1: mt, y2: Hh - mb, class: 'grid' }, svg);
+    const a = Math.pow(st.p, st.N), b = Math.pow(ps, st.N);
+    S('circle', { cx: x(st.N), cy: y(a), r: 5, class: 'dot-mute' }, svg);
+    S('circle', { cx: x(st.N), cy: y(b), r: 5, class: 'dot-real' }, svg);
+    const right = x(st.N) < W - 110, an = right ? 'start' : 'end', off = right ? 9 : -9;
+    let ya = y(a) + 4, yb = y(b) + 4;
+    if (Math.abs(ya - yb) < 14) { if (b >= a) { yb = ya - 14; } else { ya = yb - 14; } }
+    tx(svg, x(st.N) + off, Math.max(12, yb), pct(b), 'val', an);
+    tx(svg, x(st.N) + off, Math.max(12, ya), pct(a), 'val', an);
+    const cross = S('line', { x1: 0, x2: 0, y1: mt, y2: Hh - mb, class: 'cross', visibility: 'hidden' }, svg);
+    const hit = S('rect', { x: ml, y: mt, width: W - ml - mr, height: Hh - mt - mb, class: 'hit' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const p = svgPoint(svg, ev, W);
+      const n = clamp(Math.round((p.x - ml) / (W - ml - mr) * 99 + 1), 1, 100);
+      cross.setAttribute('x1', x(n)); cross.setAttribute('x2', x(n)); cross.setAttribute('visibility', 'visible');
+      tipShow(n + (n === 1 ? ' step' : ' steps'), [{ key: 'sim', v: '100%', l: 'simulator' }, { key: 'real', v: pct(Math.pow(ps, n)), l: 'site, with recovery' }, { key: 'mute', v: pct(Math.pow(st.p, n)), l: 'site, no recovery' }], ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+    el.replaceChildren(svg);
+  }
+  const r = responsive(el, render);
+  function update() {
+    $('#cp-p-o').textContent = (st.p * 100).toFixed(1) + '%';
+    $('#cp-n-o').textContent = st.N;
+    $('#cp-d-o').textContent = Math.round(st.d * 100) + '%';
+    $('#cp-k-o').textContent = st.k;
+    const a = Math.pow(st.p, st.N), b = Math.pow(pStep(), st.N);
+    $('#cp-out').textContent = 'At ' + st.N + (st.N === 1 ? ' step' : ' steps') + ': the simulator says 100%. On site, ' + pct(a) + ' without recovery, ' + pct(b) + ' with it.';
+    r();
+  }
+  $('#cp-p').addEventListener('input', e => { st.p = +e.target.value / 100; update(); });
+  $('#cp-n').addEventListener('input', e => { st.N = +e.target.value; update(); });
+  $('#cp-d').addEventListener('input', e => { st.d = +e.target.value / 100; update(); });
+  $('#cp-k').addEventListener('input', e => { st.k = +e.target.value; update(); });
+  update();
+});
+
+/* =========================================================
+   Fig 7 · toolbox
+   ========================================================= */
+safe('tools', function tools() {
+  const COLS = [['contact', 'Contact & terrain'], ['act', 'Actuators'], ['sens', 'Sensors & calibration'], ['look', 'Appearance'], ['timing', 'Timing'], ['art', 'Sim artifacts'], ['open', 'Open world'], ['drift', 'Drift & wear']];
+  const ROWS = [
+    { name: 'System identification', what: 'Measure real parameters and set the simulator to match.', c: { contact: 1, act: 2, sens: 1, timing: 2 }, k: 'Fixes only parameters the simulator already has. Re-measure when hardware changes.' },
+    { name: 'Learned actuator and residual models', what: 'Train a network on real logs to model what the physics engine gets wrong.', ex: 'ANYmal actuator net, 2019', c: { contact: 1, act: 2, timing: 1 }, k: 'Needs real data, and can be wrong outside the range it was logged in.' },
+    { name: 'Domain randomization', what: 'Train across ranges so reality is one more sample.', ex: 'Tobin 2017 · Peng 2018 · OpenAI 2019', c: { contact: 2, act: 2, sens: 2, look: 2, timing: 2, open: 1, drift: 1 }, k: 'Ranges are guesses. Too wide makes policies cautious and training slower (Fig. 2).' },
+    { name: 'Online adaptation', what: 'Infer hidden parameters from recent history and adjust.', ex: 'RMA, 2021', c: { contact: 2, act: 2, timing: 1, drift: 2 }, k: 'Needs history that reveals the parameter; adds training complexity.' },
+    { name: 'Teacher–student training', what: 'A teacher with privileged state trains a student that sees only onboard sensors.', ex: 'Lee et al., 2020', c: { contact: 1, sens: 2, look: 1 }, k: 'Two training stages; the student cannot recover what its sensors cannot see.' },
+    { name: 'Real-to-sim reconstruction', what: 'Scan real sites and objects into the simulator.', c: { contact: 1, look: 2, open: 1 }, k: 'A static snapshot. Physical properties do not come with the scan.' },
+    { name: 'Real-data fine-tuning and co-training', what: 'Mix real demonstrations or real trials into training.', c: { contact: 2, act: 2, sens: 2, look: 2, timing: 2, art: 1, open: 1, drift: 1 }, k: 'Slow and expensive; covers only what you collected.' },
+    { name: 'Forgiving hardware', what: 'Chamfers, soft fingertips, suction, force control: widen the tolerance instead of shrinking the error.', c: { contact: 2, sens: 1, open: 1, drift: 1 }, k: 'Design effort; can cost precision or speed.' },
+    { name: 'Sim-to-sim checks', what: 'Validate in a second simulator before hardware.', c: { art: 2 }, k: 'Catches simulator-specific artifacts only.' },
+    { name: 'Learned world models', what: 'Generative models trained on video, used as simulators.', c: { look: 2, open: 1 }, k: 'Contact physics not guaranteed; outcomes can look plausible and be wrong.' }
+  ];
+  const t = $('#tools');
+  const thead = H('thead', null, t), hr = H('tr', null, thead);
+  H('th', { scope: 'col' }, hr, 'Technique');
+  COLS.forEach(c => H('th', { scope: 'col', class: 'c' }, hr, c[1]));
+  H('th', { scope: 'col' }, hr, 'The catch');
+  const tb = H('tbody', null, t);
+  ROWS.forEach(r => {
+    const tr = H('tr', null, tb);
+    const th = H('th', { scope: 'row' }, tr);
+    H('span', { class: 't-name' }, th, r.name);
+    H('span', { class: 't-what' }, th, r.what);
+    if (r.ex) H('span', { class: 't-ex' }, th, r.ex);
+    COLS.forEach(c => {
+      const v = r.c[c[0]] || 0, td = H('td', { class: 'c' }, tr);
+      if (v) { H('i', { class: 'dot ' + (v === 2 ? 'full' : 'half'), 'aria-hidden': 'true' }, td); H('span', { class: 'sr' }, td, v === 2 ? 'directly' : 'partly'); }
+    });
+    H('td', { class: 't-catch' }, tr, r.k);
+  });
+});
+
+/* =========================================================
+   Fig 8 · Peng et al. 2018 data
+   ========================================================= */
+safe('peng', function peng() {
+  const MODELS = [
+    { name: 'LSTM, randomized', sim: 0.91, se: 0.03, real: 0.89, re: 0.06, n: 28 },
+    { name: 'Feedforward + history, randomized', sim: 0.87, se: 0.03, real: 0.70, re: 0.10, n: 20 },
+    { name: 'Feedforward, randomized', sim: 0.83, se: 0.04, real: 0.67, re: 0.14, n: 12 },
+    { name: 'Feedforward, no randomization', sim: 0.51, se: 0.05, real: 0.00, re: 0.00, n: 10 }
+  ];
+  const ABL = [
+    { name: 'All 95 parameters randomized', v: 0.89, e: 0.06 },
+    { name: 'Link masses fixed', v: 0.64, e: 0.10 },
+    { name: 'Puck friction fixed', v: 0.48, e: 0.10 },
+    { name: 'Action timestep fixed', v: 0.29, e: 0.11 },
+    { name: 'No observation noise', v: 0.25, e: 0.12 }
+  ];
+  const dEl = $('#peng-d'), bEl = $('#peng-b');
+  function axis(svg, x, W, top, bottom, ml, mr) {
+    [0, 0.25, 0.5, 0.75, 1].forEach(v => { S('line', { x1: x(v), x2: x(v), y1: top, y2: bottom, class: v ? 'grid' : 'axis' }, svg); tx(svg, x(v), bottom + 15, pct(v), null, 'middle'); });
+  }
+  responsive(dEl, W => {
+    const rowH = 50, top = 4, ml = 40, mr = 30, Hh = top + MODELS.length * rowH + 24;
+    const svg = svgEl(W, Hh, 'Dumbbell chart of success in simulation and on the real robot for four policies');
+    const x = v => ml + v * (W - ml - mr), bottom = top + MODELS.length * rowH;
+    axis(svg, x, W, top, bottom, ml, mr);
+    MODELS.forEach((m, i) => {
+      const y0 = top + i * rowH;
+      tx(svg, ml, y0 + 15, W < 520 ? m.name : m.name + ' · ' + m.n + ' real trials', 'ink');
+      const yy = y0 + 33;
+      S('line', { x1: x(m.real), x2: x(m.sim), y1: yy, y2: yy, class: 'connector' }, svg);
+      S('circle', { cx: x(m.sim), cy: yy, r: 5, class: 'dot-sim' }, svg);
+      S('circle', { cx: x(m.real), cy: yy, r: 5, class: 'dot-real' }, svg);
+      tx(svg, x(m.real) - 9, yy + 4, pct(m.real), 'val', 'end');
+      tx(svg, x(m.sim) + 9, yy + 4, pct(m.sim), 'val', 'start');
+      const hit = S('rect', { x: 0, y: y0, width: W, height: rowH, class: 'hit' }, svg);
+      hit.addEventListener('pointermove', ev => tipShow(m.name, [{ key: 'sim', v: m.sim.toFixed(2) + ' ± ' + m.se.toFixed(2), l: 'simulation' }, { key: 'real', v: m.real.toFixed(2) + ' ± ' + m.re.toFixed(2), l: 'real robot, ' + m.n + ' trials' }], ev.clientX, ev.clientY));
+      hit.addEventListener('pointerleave', tipHide);
+    });
+    dEl.replaceChildren(svg);
+  });
+  responsive(bEl, W => {
+    const rowH = 46, top = 4, ml = 12, mr = 56, Hh = top + ABL.length * rowH + 24;
+    const svg = svgEl(W, Hh, 'Bar chart of real-robot success when one randomization is removed');
+    const x = v => ml + v * (W - ml - mr), bottom = top + ABL.length * rowH;
+    axis(svg, x, W, top, bottom, ml, mr);
+    ABL.forEach((a, i) => {
+      const y0 = top + i * rowH, yb = y0 + 22, bh = 14;
+      tx(svg, ml, y0 + 15, a.name, 'ink');
+      const w = x(a.v) - x(0), r = Math.min(4, w / 2);
+      S('path', { d: 'M' + x(0) + ',' + yb + 'H' + (x(a.v) - r) + 'Q' + x(a.v) + ',' + yb + ' ' + x(a.v) + ',' + (yb + r) + 'V' + (yb + bh - r) + 'Q' + x(a.v) + ',' + (yb + bh) + ' ' + (x(a.v) - r) + ',' + (yb + bh) + 'H' + x(0) + 'Z', class: 'bar-real' }, svg);
+      const yc = yb + bh / 2;
+      S('path', { d: 'M' + x(a.v - a.e) + ',' + yc + 'H' + x(a.v + a.e) + 'M' + x(a.v - a.e) + ',' + (yc - 4) + 'V' + (yc + 4) + 'M' + x(a.v + a.e) + ',' + (yc - 4) + 'V' + (yc + 4), class: 'whisk' }, svg);
+      tx(svg, x(a.v + a.e) + 7, yc + 4, a.v.toFixed(2), 'val', 'start');
+      const hit = S('rect', { x: 0, y: y0, width: W, height: rowH, class: 'hit' }, svg);
+      hit.addEventListener('pointermove', ev => tipShow(a.name, [{ key: 'real', v: a.v.toFixed(2) + ' ± ' + a.e.toFixed(2), l: 'real-robot success' }], ev.clientX, ev.clientY));
+      hit.addEventListener('pointerleave', tipHide);
+    });
+    bEl.replaceChildren(svg);
+  });
+});
+
+/* =========================================================
+   Fig 9 · accuracy versus repeatability
+   ========================================================= */
+safe('targets', function targets() {
+  const DEF = [
+    { t: 'Accurate and repeatable', s: 'A fixtured, freshly calibrated cell.', b: [0, 0], sp: 3.4 },
+    { t: 'Repeatable, not accurate', s: 'A knocked camera mount: the same miss every time.', b: [26, -17], sp: 3.4 },
+    { t: 'Accurate on average, not repeatable', s: 'Noisy depth on a dusty day.', b: [0, 0], sp: 14 },
+    { t: 'Neither', s: 'Both problems at once.', b: [-22, 15], sp: 13 }
+  ];
+  const wrap = $('#targets');
+  DEF.forEach((d, idx) => {
+    const box = H('div', { class: 'tgt' }, wrap);
+    const svg = S('svg', { viewBox: '0 0 200 200', role: 'img', 'aria-label': d.t }, box);
+    const c = 100;
+    [84, 63, 42, 21].forEach(r => S('circle', { cx: c, cy: c, r: r, class: 'ring' }, svg));
+    S('line', { x1: c - 92, x2: c + 92, y1: c, y2: c, class: 'ring' }, svg);
+    S('line', { x1: c, x2: c, y1: c - 92, y2: c + 92, class: 'ring' }, svg);
+    const r = mulberry32(31 + idx * 97), pts = [];
+    for (let i = 0; i < 25; i++) pts.push([c + d.b[0] + d.sp * gauss(r), c + d.b[1] + d.sp * gauss(r)]);
+    const bx = pts.reduce((a, p) => a + p[0], 0) / pts.length, by = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const ds = pts.map(p => Math.hypot(p[0] - bx, p[1] - by));
+    const lbar = ds.reduce((a, v) => a + v, 0) / ds.length;
+    const sl = Math.sqrt(ds.reduce((a, v) => a + (v - lbar) * (v - lbar), 0) / (ds.length - 1));
+    const RP = lbar + 3 * sl, AP = Math.hypot(bx - c, by - c);
+    S('circle', { cx: bx, cy: by, r: RP, class: 'rp' }, svg);
+    pts.forEach(p => S('circle', { cx: p[0], cy: p[1], r: 2.8, class: 'pt' }, svg));
+    S('rect', { x: c - 5, y: c - 5, width: 10, height: 10, class: 'cmd' }, svg);
+    if (AP > 4) S('line', { x1: c, y1: c, x2: bx, y2: by, class: 'ap' }, svg);
+    S('path', { d: 'M' + (bx - 6) + ',' + by + 'H' + (bx + 6) + 'M' + bx + ',' + (by - 6) + 'V' + (by + 6), class: 'bary' }, svg);
+    H('p', { class: 'tt' }, box, d.t);
+    H('p', { class: 'ts' }, box, d.s);
+    H('p', { class: 'tv' }, box, 'AP ' + (AP / 10).toFixed(1) + ' mm · RP ' + (RP / 10).toFixed(1) + ' mm');
+  });
+});
+
+/* =========================================================
+   Fig 10 · a fleet over 30 days
+   ========================================================= */
+safe('fleet', function fleet() {
+  const st = { unit: 0.45, site: 0.35, wear: 0.05, recal: 14, seed: 7, table: false };
+  const L0 = 3.05, NP = 150, DAYS = 30, UNITS = 12;
+  let Z = null, units = null;
+  function draw(seed) {
+    const r = mulberry32(seed);
+    const arr = (n, f) => Array.from({ length: n }, f);
+    return {
+      u: arr(UNITS, () => gauss(r)), s: arr(3, () => gauss(r)),
+      sd: arr(3, () => arr(DAYS, () => gauss(r))), shock: arr(3, () => arr(DAYS, () => (r() < 0.05 ? 1 : 0))),
+      phase: arr(UNITS, () => r()), wr: arr(UNITS, () => 0.6 + 0.8 * r()), bn: arr(UNITS, () => arr(DAYS, () => gauss(r)))
+    };
+  }
+  function simulate() {
+    const out = [];
+    for (let u = 0; u < UNITS; u++) {
+      const s = Math.floor(u / 4), row = [];
+      for (let d = 0; d < DAYS; d++) {
+        let since;
+        if (st.recal > 0) since = (d + Math.floor(Z.phase[u] * st.recal)) % st.recal;
+        else since = d + Math.floor(Z.phase[u] * 14);
+        const lg = L0 + Z.u[u] * st.unit + Z.s[s] * st.site * 0.6 + Z.sd[s][d] * st.site - Z.shock[s][d] * st.site * 4.5 - Z.wr[u] * st.wear * since;
+        const p = 1 / (1 + Math.exp(-lg));
+        const k = clamp(Math.round(NP * p + Z.bn[u][d] * Math.sqrt(NP * p * (1 - p))), 0, NP);
+        row.push({ k: k, n: NP, since: since, recal: st.recal > 0 && since === 0 });
+      }
+      out.push({ name: 'ABC'[s] + (u % 4 + 1), site: s, row: row });
+    }
+    return out;
+  }
+  const mix = f => { const t = Math.pow(clamp(f / 0.3, 0, 1), 0.8); return 'fill:color-mix(in oklab, var(--heat) ' + (6 + 94 * t).toFixed(1) + '%, var(--surface))'; };
+  const key = $('#fl-key');
+  (function buildKey() {
+    H('span', null, key, 'failure rate');
+    const box = H('span', { style: 'display:inline-grid;gap:2px' }, key);
+    const ramp = H('span', { class: 'ramp' }, box), lab = H('span', { class: 'ramp-l' }, box);
+    [0, 0.05, 0.1, 0.2, 0.3].forEach((f, i) => { H('i', { style: mix(f).replace('fill:', 'background:') }, ramp); H('span', null, lab, i === 4 ? '30+' : Math.round(f * 100) + ''); });
+    H('span', null, key, '% of picks');
+    const rk = H('span', { style: 'display:inline-flex;align-items:center;gap:6px' }, key);
+    const sv = S('svg', { width: 12, height: 12, viewBox: '0 0 12 12', 'aria-hidden': 'true' }); S('circle', { cx: 6, cy: 6, r: 2.2, fill: 'var(--ink)' }, sv);
+    rk.appendChild(sv); rk.appendChild(doc.createTextNode('recalibration day'));
+  })();
+  const el = $('#fl-heat');
+  function render(W) {
+    const lw = 34, top = 20, sg = 10, gap = 2;
+    const cw = clamp(Math.floor((W - lw - (W > 520 ? 64 : 4)) / DAYS) - gap, 5, 30), ch = Math.max(cw, 13);
+    const pitch = cw + gap, pitchY = ch + gap;
+    const Hh = top + UNITS * pitchY + 2 * sg + 22;
+    const svg = svgEl(W, Hh, 'Heat map of daily failure rate for 12 units over 30 days');
+    [1, 10, 20, 30].forEach(d => tx(svg, lw + (d - 1) * pitch + cw / 2, 12, 'day ' + d, null, d === 1 ? 'start' : 'middle'));
+    units.forEach((u, i) => {
+      const y = top + i * pitchY + u.site * sg;
+      tx(svg, lw - 6, y + ch / 2 + 4, u.name, 'ink2', 'end');
+      u.row.forEach((c, d) => {
+        const x = lw + d * pitch, f = 1 - c.k / c.n;
+        const rect = S('rect', { x: x, y: y, width: cw, height: ch, rx: Math.min(2, cw / 4), style: mix(f) }, svg);
+        if (c.recal) S('circle', { cx: x + cw / 2, cy: y + ch / 2, r: Math.max(1.3, cw / 8), fill: 'var(--ink)', 'pointer-events': 'none' }, svg);
+        rect.addEventListener('pointermove', ev => tipShow('Unit ' + u.name + ' · day ' + (d + 1), [{ v: pct(c.k / c.n), l: 'success (' + c.k + ' of ' + c.n + ' picks)' }, { v: st.recal > 0 || c.since >= 0 ? c.since + (c.since === 1 ? ' day' : ' days') : '', l: 'since calibration' }], ev.clientX, ev.clientY));
+        rect.addEventListener('pointerleave', tipHide);
+      });
+    });
+    ['Site A', 'Site B', 'Site C'].forEach((s, i) => { if (W > 520) tx(svg, lw + DAYS * pitch + 6, top + i * (4 * pitchY + sg) + 2 * pitchY + 4, s, null, 'start'); });
+    tx(svg, lw, Hh - 4, 'days →', null, 'start');
+    el.replaceChildren(svg);
+  }
+  const r = responsive(el, w => { if (units) render(w); });
+  function table() {
+    const wrap = $('#fl-table-wrap');
+    wrap.replaceChildren();
+    const t = H('table', { class: 'fleet-table' }, wrap);
+    const hr = H('tr', null, H('thead', null, t));
+    ['Unit', '30-day success', 'Worst day', 'First week', 'Last week'].forEach(h => H('th', { scope: 'col' }, hr, h));
+    const tb = H('tbody', null, t);
+    units.forEach(u => {
+      const tot = u.row.reduce((a, c) => a + c.k, 0) / (DAYS * NP);
+      let wi = 0; u.row.forEach((c, i) => { if (c.k < u.row[wi].k) wi = i; });
+      const wk = (a, b) => u.row.slice(a, b).reduce((s, c) => s + c.k, 0) / ((b - a) * NP);
+      const tr = H('tr', null, tb);
+      H('td', null, tr, u.name); H('td', null, tr, pct(tot)); H('td', null, tr, pct(u.row[wi].k / NP) + ' (day ' + (wi + 1) + ')'); H('td', null, tr, pct(wk(0, 7))); H('td', null, tr, pct(wk(23, 30)));
+    });
+  }
+  function update() {
+    units = simulate();
+    $('#fl-unit-o').textContent = st.unit.toFixed(2);
+    $('#fl-site-o').textContent = st.site.toFixed(2);
+    $('#fl-wear-o').textContent = st.wear.toFixed(3);
+    let K = 0, Nn = 0, low = 0;
+    const per = units.map(u => { const k = u.row.reduce((a, c) => a + c.k, 0); K += k; Nn += DAYS * NP; u.row.forEach(c => { if (c.k / c.n < 0.9) low++; }); return { name: u.name, rate: k / (DAYS * NP), fails: DAYS * NP - k }; });
+    const sorted = per.slice().sort((a, b) => a.rate - b.rate);
+    const totalFails = Nn - K;
+    $('#fl-avg').textContent = pct(K / Nn);
+    $('#fl-best').textContent = pct(sorted[sorted.length - 1].rate); $('#fl-best-n').textContent = 'unit ' + sorted[sorted.length - 1].name;
+    $('#fl-worst').textContent = pct(sorted[0].rate); $('#fl-worst-n').textContent = 'unit ' + sorted[0].name;
+    $('#fl-share').textContent = totalFails ? pct((sorted[0].fails + sorted[1].fails) / totalFails) : '–';
+    $('#fl-low').textContent = low;
+    r();
+    if (st.table) table();
+  }
+  $('#fl-unit').addEventListener('input', e => { st.unit = +e.target.value; update(); });
+  $('#fl-site').addEventListener('input', e => { st.site = +e.target.value; update(); });
+  $('#fl-wear').addEventListener('input', e => { st.wear = +e.target.value; update(); });
+  $('#fl-recal').addEventListener('change', e => { st.recal = +e.target.value; update(); });
+  $('#fl-shuffle').addEventListener('click', () => { st.seed++; Z = draw(st.seed * 7907); update(); });
+  $('#fl-table-btn').addEventListener('click', e => {
+    st.table = !st.table;
+    e.currentTarget.setAttribute('aria-expanded', String(st.table));
+    e.currentTarget.textContent = st.table ? 'Hide table' : 'Show table';
+    $('#fl-table-wrap').hidden = !st.table;
+    if (st.table) table();
+  });
+  Z = draw(st.seed * 7907);
+  update();
+});
+
+/* =========================================================
+   Fig 11 · trials and confidence
+   ========================================================= */
+safe('trials', function trials() {
+  const lg = (function () {
+    const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    return function lgamma(x) {
+      if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+      x -= 1; let a = c[0]; const t = x + 7.5;
+      for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+      return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+    };
+  })();
+  function sumPmf(n, lo, hi, p) {
+    if (lo > hi) return 0;
+    if (p <= 0) return lo === 0 ? 1 : 0;
+    if (p >= 1) return hi === n ? 1 : 0;
+    const lp = Math.log(p), lq = Math.log1p(-p), ln = lg(n + 1);
+    let mx = -Infinity; const ts = [];
+    for (let i = lo; i <= hi; i++) { const v = ln - lg(i + 1) - lg(n - i + 1) + i * lp + (n - i) * lq; ts.push(v); if (v > mx) mx = v; }
+    let s = 0; ts.forEach(v => { s += Math.exp(v - mx); });
+    return Math.exp(mx) * s;
+  }
+  function bisect(f) { let a = 0, b = 1, fa = f(a); for (let i = 0; i < 60; i++) { const m = (a + b) / 2, fm = f(m); if ((fm > 0) === (fa > 0)) { a = m; fa = fm; } else b = m; } return (a + b) / 2; }
+  function cp(k, n) {
+    const lo = k > 0 ? bisect(p => sumPmf(n, k, n, p) - 0.025) : 0;
+    const hi = k < n ? bisect(p => sumPmf(n, 0, k, p) - 0.025) : 1;
+    return [lo, hi];
+  }
+  const PRE = [[10, 10], [19, 20], [46, 50], [95, 100], [297, 300], [990, 1000]];
+  const PRE_CI = PRE.map(p => cp(p[0], p[1]));
+  const st = { k: 19, n: 20, ops: 1000 };
+  const el = $('#ci-chart');
+  const fmtCI = ci => pct(ci[0]) + ' to ' + pct(ci[1]);
+  function render(W) {
+    const mine = cp(st.k, st.n);
+    const rows = PRE.map((p, i) => ({ k: p[0], n: p[1], ci: PRE_CI[i], mine: false })).concat([{ k: st.k, n: st.n, ci: mine, mine: true }]);
+    const minLo = Math.min.apply(null, rows.map(r => r.ci[0]));
+    const x0 = minLo < 0.5 ? Math.max(0, Math.floor(minLo * 10) / 10) : 0.5;
+    const lw = 92, rw = W > 520 ? 120 : 0, rowH = 30, top = 6, Hh = top + rows.length * rowH + 30;
+    const svg = svgEl(W, Hh, '95% confidence intervals for several measured success rates');
+    const x = v => lw + (v - x0) / (1 - x0) * (W - lw - rw - 14);
+    const bottom = top + rows.length * rowH;
+    const ticks = []; for (let v = x0; v <= 1.0001; v += (1 - x0) <= 0.5 ? 0.1 : 0.2) ticks.push(Math.round(v * 100) / 100);
+    ticks.forEach(v => { S('line', { x1: x(v), x2: x(v), y1: top, y2: bottom, class: v === x0 ? 'axis' : 'grid' }, svg); tx(svg, x(v), bottom + 15, pct(v), null, 'middle'); });
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      tx(svg, lw - 12, y + 4, (r.mine ? 'yours ' : '') + r.k + ' / ' + num(r.n), r.mine ? 'val' : 'ink2', 'end');
+      S('path', { d: 'M' + x(r.ci[0]) + ',' + y + 'H' + x(r.ci[1]) + 'M' + x(r.ci[0]) + ',' + (y - 5) + 'V' + (y + 5) + 'M' + x(r.ci[1]) + ',' + (y - 5) + 'V' + (y + 5), class: r.mine ? 'l-real' : 'l-ink' }, svg);
+      S('circle', { cx: x(r.k / r.n), cy: y, r: 4.5, class: r.mine ? 'dot-real' : 'dot-ink' }, svg);
+      if (rw) tx(svg, W - rw + 4, y + 4, fmtCI(r.ci), r.mine ? 'val' : null, 'start');
+      const hit = S('rect', { x: 0, y: y - rowH / 2, width: W, height: rowH, class: 'hit' }, svg);
+      hit.addEventListener('pointermove', ev => tipShow(r.k + ' of ' + num(r.n) + ' succeeded', [{ v: pct(r.k / r.n), l: 'measured' }, { v: fmtCI(r.ci), l: '95% interval' }], ev.clientX, ev.clientY));
+      hit.addEventListener('pointerleave', tipHide);
+    });
+    el.replaceChildren(svg);
+  }
+  const r = responsive(el, render);
+  function update() {
+    const ci = cp(st.k, st.n);
+    $('#ci-out').replaceChildren(doc.createTextNode(st.k + ' of ' + num(st.n) + ' is ' + pct(st.k / st.n) + ' measured. The true rate is plausibly anywhere from '), H('b', null, null, pct(ci[0])), doc.createTextNode(' to '), H('b', null, null, pct(ci[1])), doc.createTextNode('.'));
+    const lo = st.ops * (1 - ci[1]), hi = st.ops * (1 - ci[0]), mid = st.ops * (1 - st.k / st.n);
+    const f = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US');
+    $('#ci-ops-o').textContent = num(st.ops);
+    $('#ci-ops-out').textContent = 'At ' + num(st.ops) + ' picks a day, that means about ' + f(mid) + ' interventions a day, and anywhere from ' + f(lo) + ' to ' + f(hi) + ' given the uncertainty.';
+    r();
+  }
+  const kIn = $('#ci-k'), nIn = $('#ci-n');
+  function readInputs() {
+    let n = Math.round(+nIn.value); if (!isFinite(n) || n < 1) n = 1; if (n > 5000) n = 5000;
+    let k = Math.round(+kIn.value); if (!isFinite(k) || k < 0) k = 0; if (k > n) k = n;
+    st.n = n; st.k = k; kIn.max = n;
+    update();
+  }
+  kIn.addEventListener('input', readInputs); nIn.addEventListener('input', readInputs);
+  kIn.addEventListener('change', () => { kIn.value = st.k; }); nIn.addEventListener('change', () => { nIn.value = st.n; kIn.value = st.k; });
+  $('#ci-ops').addEventListener('input', e => { st.ops = +e.target.value; update(); });
+  const need = p => Math.ceil(Math.log(0.05) / Math.log(p));
+  $('#ci-zero').textContent = 'With zero failures, showing at least 90% at 95% confidence takes ' + need(0.9) + ' straight successes; 95% takes ' + need(0.95) + ', 99% takes ' + need(0.99) + ', and 99.9% takes ' + num(need(0.999)) + '.';
+  update();
+});
+
+/* scroll spy for the rail */
+safe('spy', function spy() {
+  if (!('IntersectionObserver' in window)) return;
+  const links = $$('.rail ol a');
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-35% 0px -60% 0px' });
+  links.forEach(a => { const s = $(a.getAttribute('href')); if (s) io.observe(s); });
+});
+})();
+</script>
+</body>
+</html>
